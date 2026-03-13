@@ -2053,6 +2053,17 @@ let selectedPlanChoice = 'free';
 
 // ── AUTH: Session beim Laden prüfen ──
 window.addEventListener('DOMContentLoaded', async () => {
+  // Magic Link Hash verarbeiten (access_token in URL)
+  const hash = window.location.hash;
+  if (hash && hash.includes('access_token')) {
+    const { data: { session }, error } = await _supabase.auth.getSession();
+    if (session?.user) {
+      await loadUserAndStart(session.user);
+      window.history.replaceState(null, '', window.location.pathname);
+      return;
+    }
+  }
+
   const { data: { session } } = await _supabase.auth.getSession();
   if (session?.user) {
     await loadUserAndStart(session.user);
@@ -2062,6 +2073,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   _supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       await loadUserAndStart(session.user);
+      window.history.replaceState(null, '', window.location.pathname);
     }
     if (event === 'SIGNED_OUT') {
       currentUser = null;
