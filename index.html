@@ -1,0 +1,3695 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klario – Einfach selbstständig</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --cream: #faf7f2;
+  --warm-white: #fffef9;
+  --ink: #1a1612;
+  --ink-soft: #4a4540;
+  --ink-dim: #9a9590;
+  --amber: #c8832a;
+  --amber-light: #f5c878;
+  --amber-pale: #fdf3e0;
+  --sage: #5a7a5a;
+  --border: #e8e2d8;
+  --border-strong: #ccc5b8;
+  --success: #3a7a4a;
+  --danger: #c04040;
+  --shadow: 0 1px 3px rgba(26,22,18,0.08), 0 4px 16px rgba(26,22,18,0.06);
+  --shadow-lg: 0 8px 40px rgba(26,22,18,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.4;
+}
+
+/* ── PAGES ── */
+.page { display: none; }
+.page.active { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate { animation: fadeUp 0.5s ease forwards; }
+.animate-delay-1 { animation-delay: 0.1s; opacity: 0; animation-fill-mode: forwards; }
+.animate-delay-2 { animation-delay: 0.2s; opacity: 0; animation-fill-mode: forwards; }
+.animate-delay-3 { animation-delay: 0.3s; opacity: 0; animation-fill-mode: forwards; }
+.animate-delay-4 { animation-delay: 0.4s; opacity: 0; animation-fill-mode: forwards; }
+
+/* ═══════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════ */
+#page-login {
+  min-height: 100vh;
+  align-items: stretch;
+}
+
+.login-left {
+  flex: 1;
+  background: var(--ink);
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-left::before {
+  content: '';
+  position: absolute;
+  top: -100px; right: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(200,131,42,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.login-left::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; left: -80px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(200,131,42,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.brand-mark {
+  width: 36px; height: 36px;
+  background: var(--amber);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px;
+  color: white;
+}
+
+.brand-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.login-hero {
+  position: relative;
+  z-index: 1;
+}
+
+.login-hero h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 4vw, 52px);
+  color: white;
+  line-height: 1.15;
+  margin-bottom: 20px;
+  font-weight: 400;
+}
+
+.login-hero h1 em {
+  color: var(--amber-light);
+  font-style: italic;
+}
+
+.login-hero p {
+  color: rgba(255,255,255,0.5);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 340px;
+}
+
+.login-features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+}
+
+.feature-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  flex-shrink: 0;
+}
+
+/* RIGHT SIDE */
+.login-right {
+  width: 480px;
+  background: var(--warm-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 48px;
+}
+
+.login-form-wrap {
+  width: 100%;
+  max-width: 360px;
+}
+
+.login-form-wrap h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px;
+  font-weight: 400;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.login-form-wrap .subtitle {
+  color: var(--ink-dim);
+  font-size: 14px;
+  margin-bottom: 36px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+input[type="email"], input[type="text"], input[type="tel"], select, textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--warm-white);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px rgba(200,131,42,0.12);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: #2d2820;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(26,22,18,0.2);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1.5px solid var(--border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+
+.btn-amber {
+  background: var(--amber);
+  color: white;
+}
+
+.btn-amber:hover {
+  background: #b5741f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(200,131,42,0.25);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.btn-ghost:hover { color: var(--ink); }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.magic-info {
+  background: var(--amber-pale);
+  border: 1px solid rgba(200,131,42,0.2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #7a5010;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+.sent-state {
+  text-align: center;
+  padding: 20px 0;
+}
+.sent-icon { font-size: 48px; margin-bottom: 16px; }
+.sent-state h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.sent-state p { color: var(--ink-dim); font-size: 14px; line-height: 1.7; }
+
+/* ═══════════════════════════════════
+   ONBOARDING PAGE
+═══════════════════════════════════ */
+#page-onboarding {
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  flex-direction: column;
+}
+
+.onboarding-wrap {
+  width: 100%;
+  max-width: 520px;
+  padding: 24px;
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: all 0.3s;
+}
+.step-dot.active { background: var(--amber); width: 24px; border-radius: 4px; }
+.step-dot.done { background: var(--sage); }
+
+.onboarding-card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+}
+
+.onboarding-card h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+.onboarding-card .sub {
+  color: var(--ink-dim);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.form-actions .btn { flex: 1; }
+
+/* ═══════════════════════════════════
+   APP SHELL
+═══════════════════════════════════ */
+#page-app {
+  min-height: 100vh;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+/* TOP NAV */
+.topnav {
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topnav-left { display: flex; align-items: center; gap: 32px; }
+
+.nav-links { display: flex; gap: 4px; }
+
+.nav-link {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  background: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.nav-link:hover { color: var(--ink); background: var(--cream); }
+.nav-link.active { color: var(--ink); background: var(--amber-pale); }
+
+.topnav-right { display: flex; align-items: center; gap: 12px; }
+
+.user-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.plan-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--amber-pale);
+  color: var(--amber);
+  border: 1px solid rgba(200,131,42,0.2);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.plan-badge.pro {
+  background: #f0faf2;
+  color: var(--sage);
+  border-color: rgba(90,122,90,0.2);
+}
+
+/* APP CONTENT */
+.app-content {
+  flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* SECTION */
+.section { display: none; }
+.section.active { display: block; animation: fadeUp 0.3s ease; }
+
+/* DASHBOARD */
+.dash-greeting {
+  margin-bottom: 32px;
+}
+
+.dash-greeting h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+
+.dash-greeting p { color: var(--ink-dim); font-size: 15px; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  transition: box-shadow 0.2s;
+}
+
+.stat-card:hover { box-shadow: var(--shadow); }
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-change {
+  font-size: 12px;
+  color: var(--sage);
+}
+
+.stat-change.down { color: var(--danger); }
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+
+.card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.card-body { padding: 0; }
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  padding: 10px 22px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--cream);
+}
+
+td {
+  padding: 13px 22px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-soft);
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--cream); }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-paid { background: #f0faf2; color: var(--sage); }
+.status-open { background: #fdf3e0; color: var(--amber); }
+.status-overdue { background: #fdf0f0; color: var(--danger); }
+
+/* QUICK ACTIONS */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  background: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: left;
+  width: 100%;
+}
+
+.quick-action:hover {
+  background: var(--cream);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+.qa-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.qa-amber { background: var(--amber-pale); }
+.qa-sage { background: #f0faf2; }
+.qa-blue { background: #eff5ff; }
+.qa-ink { background: var(--cream); }
+
+/* FREE LIMIT BAR */
+.limit-card {
+  background: var(--amber-pale);
+  border: 1px solid rgba(200,131,42,0.2);
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.limit-card h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a5010;
+  margin-bottom: 4px;
+}
+
+.limit-card p {
+  font-size: 12px;
+  color: #9a7030;
+  margin-bottom: 14px;
+}
+
+.limit-bar-bg {
+  background: rgba(200,131,42,0.2);
+  border-radius: 3px;
+  height: 6px;
+  margin-bottom: 12px;
+}
+
+.limit-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--amber);
+  transition: width 0.5s ease;
+}
+
+/* UPGRADE MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,22,18,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--warm-white);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: fadeUp 0.3s ease;
+  text-align: center;
+}
+
+.modal-icon { font-size: 48px; margin-bottom: 16px; }
+
+.modal h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+
+.modal p { color: var(--ink-dim); font-size: 14px; line-height: 1.7; margin-bottom: 24px; }
+
+.price-display {
+  background: var(--cream);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.price-amount {
+  font-family: 'Instrument Serif', serif;
+  font-size: 36px;
+  color: var(--ink);
+}
+
+.price-period { font-size: 14px; color: var(--ink-dim); }
+
+.modal-actions { display: flex; gap: 10px; }
+.modal-actions .btn { flex: 1; }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: white;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  z-index: 2000;
+  box-shadow: var(--shadow-lg);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  animation: fadeUp 0.3s ease;
+}
+
+.toast.show { display: flex; }
+.toast.success { background: var(--sage); }
+
+/* SETTINGS PAGE */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-nav-item {
+  padding: 9px 14px;
+  border-radius: 7px;
+  font-size: 14px;
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+
+.settings-nav-item:hover { background: var(--border); color: var(--ink); }
+.settings-nav-item.active { background: var(--amber-pale); color: var(--amber); }
+
+.settings-panel {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+}
+
+.settings-panel h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.setting-row:last-child { border-bottom: none; }
+
+.setting-info h4 { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.setting-info p { font-size: 13px; color: var(--ink-dim); }
+
+/* TOGGLE */
+.toggle {
+  width: 42px; height: 24px;
+  background: var(--border-strong);
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  border: none;
+  flex-shrink: 0;
+}
+
+.toggle.on { background: var(--amber); }
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.toggle.on::after { transform: translateX(18px); }
+
+/* EMPTY STATES */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-dim);
+}
+
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state h4 { font-size: 16px; color: var(--ink-soft); margin-bottom: 6px; }
+.empty-state p { font-size: 13px; }
+
+/* MAHNSTUFE BUTTONS */
+.mahnstufe-btn {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--warm-white);
+}
+.mahnstufe-btn:hover { border-color: var(--amber); }
+.mahnstufe-btn.active { border: 2px solid var(--amber); background: var(--amber-pale); }
+
+/* MAHNSTUFE BADGES */
+.mahnstufe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.mahnstufe-0 { background: #f0f4ff; color: #4060aa; }
+.mahnstufe-1 { background: #f0faf2; color: var(--sage); }
+.mahnstufe-2 { background: var(--amber-pale); color: var(--amber); }
+.mahnstufe-3 { background: #fdf0f0; color: var(--danger); }
+
+/* FILTER BUTTONS */
+.filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-btn:hover { border-color: var(--amber); color: var(--amber); }
+.filter-btn.active { background: var(--amber-pale); border-color: var(--amber); color: var(--amber); font-weight: 600; }
+
+/* PRODUCT CARDS */
+.produkt-card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+  position: relative;
+}
+.produkt-card:hover { border-color: var(--amber); box-shadow: var(--shadow); }
+.produkt-card-cat {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--amber);
+  margin-bottom: 8px;
+}
+.produkt-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.produkt-card p { font-size: 13px; color: var(--ink-dim); margin-bottom: 14px; line-height: 1.5; }
+.produkt-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.produkt-preis {
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px;
+  color: var(--ink);
+}
+.produkt-einheit { font-size: 12px; color: var(--ink-dim); margin-left: 2px; }
+.produkt-actions { display: flex; gap: 6px; }
+.produkt-actions button {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: none;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--ink-dim);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.produkt-actions button:hover { border-color: var(--amber); color: var(--amber); }
+.produkt-actions .del-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* CATEGORY COLOR DOTS */
+.cat-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .login-left { display: none; }
+  .login-right { width: 100%; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .dash-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     LOGIN PAGE
+═══════════════════════════════════ -->
+<div class="page active" id="page-login">
+  <div class="login-left">
+    <div class="brand animate">
+      <div class="brand-mark">K</div>
+      <span class="brand-name">Klario</span>
+    </div>
+    <div class="login-hero">
+      <h1 class="animate animate-delay-1">Alles was du<br>als Selbstständiger<br><em>wirklich brauchst.</em></h1>
+      <p class="animate animate-delay-2">Rechnungen, Kunden, Angebote und Zeiterfassung – in einem schlanken Tool für Kleinunternehmer.</p>
+    </div>
+    <div class="login-features animate animate-delay-3">
+      <div class="login-feature"><div class="feature-dot"></div> Rechnungen in Sekunden erstellen</div>
+      <div class="login-feature"><div class="feature-dot"></div> Kunden & Angebote verwalten</div>
+      <div class="login-feature"><div class="feature-dot"></div> Zeit erfassen & direkt abrechnen</div>
+      <div class="login-feature"><div class="feature-dot"></div> DSGVO-konform, Server in Deutschland</div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-form-wrap">
+      <!-- NORMAL STATE -->
+      <div id="login-form-state">
+        <h2 class="animate">Willkommen zurück</h2>
+        <p class="subtitle animate animate-delay-1">Gib deine E-Mail ein – wir senden dir einen Login-Link.</p>
+
+        <div class="form-group animate animate-delay-2">
+          <label>E-Mail-Adresse</label>
+          <input type="email" id="login-email" placeholder="deine@email.de" />
+        </div>
+
+        <button class="btn btn-primary animate animate-delay-3" onclick="sendMagicLink()">
+          ✉️ Magic Link senden
+        </button>
+
+        <div class="magic-info animate animate-delay-4">
+          🔐 Kein Passwort nötig. Du bekommst einen sicheren Link per E-Mail – einmal klicken, fertig eingeloggt.
+        </div>
+
+        <div class="divider animate animate-delay-4">oder</div>
+
+        <button class="btn btn-secondary animate animate-delay-4" onclick="demoLogin()" style="width:100%">
+          🎮 Demo ohne Anmeldung testen
+        </button>
+      </div>
+
+      <!-- SENT STATE -->
+      <div id="login-sent-state" style="display:none;">
+        <div class="sent-state">
+          <div class="sent-icon">📬</div>
+          <h3>Link gesendet!</h3>
+          <p>Wir haben einen Login-Link an <strong id="sent-email"></strong> geschickt.<br><br>Klick einfach auf den Link in der E-Mail – kein Passwort, keine Umwege.</p>
+          <br>
+          <button class="btn btn-ghost" onclick="resetLoginForm()" style="margin: 0 auto; display:flex; width:fit-content;">← Andere E-Mail</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     ONBOARDING PAGE
+═══════════════════════════════════ -->
+<div class="page" id="page-onboarding" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh;">
+  <div class="onboarding-wrap">
+    <div class="step-indicator">
+      <div class="step-dot active" id="sdot-0"></div>
+      <div class="step-dot" id="sdot-1"></div>
+      <div class="step-dot" id="sdot-2"></div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="onboard-step-0" class="onboarding-card animate">
+      <h2>Schön, dass du da bist 👋</h2>
+      <p class="sub">Erzähl uns kurz von dir – dauert weniger als eine Minute.</p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Vorname</label>
+          <input type="text" id="ob-vorname" placeholder="Max" />
+        </div>
+        <div class="form-group">
+          <label>Nachname</label>
+          <input type="text" id="ob-nachname" placeholder="Mustermann" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Firmenname (optional)</label>
+        <input type="text" id="ob-firma" placeholder="Max Mustermann Design" />
+      </div>
+
+      <div class="form-group">
+        <label>Berufsfeld</label>
+        <select id="ob-beruf">
+          <option value="">Bitte wählen...</option>
+          <option>Freelancer / Designer</option>
+          <option>Handwerk & Dienstleistung</option>
+          <option>Online-Handel / E-Commerce</option>
+          <option>Beratung & Coaching</option>
+          <option>IT & Entwicklung</option>
+          <option>Fotografie / Video</option>
+          <option>Sonstiges</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="nextOnboardStep(1)">Weiter →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="onboard-step-1" class="onboarding-card animate" style="display:none;">
+      <h2>Deine Rechnungsdaten</h2>
+      <p class="sub">Diese Daten erscheinen automatisch auf deinen Rechnungen.</p>
+
+      <div class="form-group">
+        <label>Straße & Hausnummer</label>
+        <input type="text" id="ob-strasse" placeholder="Musterstraße 12" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>PLZ</label>
+          <input type="text" id="ob-plz" placeholder="12345" />
+        </div>
+        <div class="form-group">
+          <label>Stadt</label>
+          <input type="text" id="ob-stadt" placeholder="Berlin" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Steuernummer</label>
+        <input type="text" id="ob-steuernr" placeholder="12/345/67890" />
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="nextOnboardStep(0)">← Zurück</button>
+        <button class="btn btn-primary" onclick="nextOnboardStep(2)">Weiter →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="onboard-step-2" class="onboarding-card animate" style="display:none;">
+      <h2>Fast geschafft! 🎉</h2>
+      <p class="sub">Wähle deinen Plan. Du kannst jederzeit upgraden.</p>
+
+      <div style="display:grid; gap:12px; margin-bottom:24px;">
+        <div id="plan-free" onclick="selectPlan('free')" style="border:2px solid var(--amber); border-radius:10px; padding:16px 18px; cursor:pointer; background:var(--amber-pale);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <strong style="font-size:15px;">Free</strong>
+            <span style="font-size:18px;font-family:'Instrument Serif',serif;">0 €/Monat</span>
+          </div>
+          <p style="font-size:13px;color:var(--ink-dim);">3 Rechnungen/Monat · 10 Kunden · PDF-Export</p>
+        </div>
+        <div id="plan-pro" onclick="selectPlan('pro')" style="border:1.5px solid var(--border); border-radius:10px; padding:16px 18px; cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <strong style="font-size:15px;">Pro ⭐</strong>
+            <span style="font-size:18px;font-family:'Instrument Serif',serif;">9 €/Monat</span>
+          </div>
+          <p style="font-size:13px;color:var(--ink-dim);">Alles unbegrenzt · Zeiterfassung · Angebote · Logo</p>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="nextOnboardStep(1)">← Zurück</button>
+        <button class="btn btn-amber" onclick="finishOnboarding()">Klario starten 🚀</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     APP
+═══════════════════════════════════ -->
+<div class="page" id="page-app" style="display:none; flex-direction:column;">
+
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="topnav-left">
+      <div class="brand">
+        <div class="brand-mark">K</div>
+        <span class="brand-name">Klario</span>
+      </div>
+      <div class="nav-links">
+        <button class="nav-link active" onclick="showSection('dashboard', this)">Dashboard</button>
+        <button class="nav-link" onclick="showSection('rechnungen', this)">Rechnungen</button>
+        <button class="nav-link" onclick="showSection('kunden', this)">Kunden</button>
+        <button class="nav-link" onclick="showSection('mahnwesen', this)">Mahnwesen</button>
+        <button class="nav-link" onclick="showSection('angebote', this)">Angebote</button>
+        <button class="nav-link" onclick="showSection('zeit', this)">Zeiterfassung</button>
+        <button class="nav-link" onclick="showSection('ausgaben', this)">Ausgaben</button>
+        <button class="nav-link" onclick="showSection('produkte', this)">Produkte</button>
+        <button class="nav-link" onclick="showSection('euer', this)">Steuer / EÜR</button>
+      </div>
+    </div>
+    <div class="topnav-right">
+      <span class="plan-badge" id="plan-badge-nav">Free</span>
+      <div class="user-avatar" id="user-avatar" onclick="showSection('einstellungen', null)">M</div>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="app-content">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="dash-greeting animate">
+        <h1>Guten Morgen, <span id="dash-name">Max</span> 👋</h1>
+        <p id="dash-date"></p>
+      </div>
+
+      <!-- FREE LIMIT BAR -->
+      <div class="limit-card animate animate-delay-1" id="free-limit-card">
+        <h4>Free Plan – 1 von 3 Rechnungen diesen Monat</h4>
+        <p>Upgrade auf Pro für unbegrenzte Rechnungen und alle Features.</p>
+        <div class="limit-bar-bg"><div class="limit-bar-fill" style="width:33%"></div></div>
+        <button class="btn btn-amber" style="width:100%;" onclick="showUpgradeModal()">⭐ Auf Pro upgraden – 9 €/Monat</button>
+      </div>
+
+      <div class="stats-grid animate animate-delay-1">
+        <div class="stat-card">
+          <div class="stat-label">Umsatz (Monat)</div>
+          <div class="stat-value">€ 2.840</div>
+          <div class="stat-change">↑ +12% vs. letzten Monat</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Offene Rechnungen</div>
+          <div class="stat-value">3</div>
+          <div class="stat-change">€ 1.200 ausstehend</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aktive Kunden</div>
+          <div class="stat-value">8</div>
+          <div class="stat-change">↑ 2 neu diesen Monat</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Erfasste Stunden</div>
+          <div class="stat-value">47h</div>
+          <div class="stat-change" id="zeit-stat">Dieser Monat</div>
+        </div>
+      </div>
+
+      <div class="dash-grid animate animate-delay-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Letzte Rechnungen</h3>
+            <button class="btn btn-ghost" onclick="showSection('rechnungen', null)">Alle →</button>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Kunde</th>
+                  <th>Betrag</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>RE-2024-003</td>
+                  <td>Schmidt GmbH</td>
+                  <td>€ 840,00</td>
+                  <td><span class="status-badge status-paid">Bezahlt</span></td>
+                </tr>
+                <tr>
+                  <td>RE-2024-002</td>
+                  <td>Bauer & Co.</td>
+                  <td>€ 560,00</td>
+                  <td><span class="status-badge status-open">Offen</span></td>
+                </tr>
+                <tr>
+                  <td>RE-2024-001</td>
+                  <td>TechStart AG</td>
+                  <td>€ 1.440,00</td>
+                  <td><span class="status-badge status-overdue">Überfällig</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Schnellzugriff</h3></div>
+          <div class="card-body">
+            <div class="quick-actions">
+              <button class="quick-action" onclick="showSection('rechnungen', null)">
+                <div class="qa-icon qa-amber">📄</div>
+                <div>
+                  <div style="font-weight:500;color:var(--ink);">Neue Rechnung</div>
+                  <div style="font-size:12px;color:var(--ink-dim);">Schnell & PDF-fertig</div>
+                </div>
+              </button>
+              <button class="quick-action" onclick="showSection('kunden', null)">
+                <div class="qa-icon qa-sage">👤</div>
+                <div>
+                  <div style="font-weight:500;color:var(--ink);">Kunden anlegen</div>
+                  <div style="font-size:12px;color:var(--ink-dim);">CRM & Kontakte</div>
+                </div>
+              </button>
+              <button class="quick-action" onclick="showSection('angebote', null)">
+                <div class="qa-icon qa-blue">📋</div>
+                <div>
+                  <div style="font-weight:500;color:var(--ink);">Angebot erstellen</div>
+                  <div style="font-size:12px;color:var(--ink-dim);">Pro Feature ⭐</div>
+                </div>
+              </button>
+              <button class="quick-action" onclick="showSection('zeit', null)">
+                <div class="qa-icon qa-ink">⏱️</div>
+                <div>
+                  <div style="font-weight:500;color:var(--ink);">Zeit erfassen</div>
+                  <div style="font-size:12px;color:var(--ink-dim);">Pro Feature ⭐</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:20px;" class="animate animate-delay-3">
+
+        <!-- UMSATZ VERLAUF -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Umsatz der letzten 6 Monate</h3>
+            <div style="display:flex;gap:6px;">
+              <button class="filter-btn active" id="chart-btn-umsatz" onclick="switchChart('umsatz',this)" style="font-size:12px;padding:4px 12px;">Umsatz</button>
+              <button class="filter-btn" id="chart-btn-ausgaben" onclick="switchChart('ausgaben',this)" style="font-size:12px;padding:4px 12px;">Ausgaben</button>
+              <button class="filter-btn" id="chart-btn-gewinn" onclick="switchChart('gewinn',this)" style="font-size:12px;padding:4px 12px;">Gewinn</button>
+            </div>
+          </div>
+          <div style="padding:20px 24px;">
+            <canvas id="umsatz-chart" height="100"></canvas>
+          </div>
+        </div>
+
+        <!-- AUSGABEN NACH KATEGORIE -->
+        <div class="card">
+          <div class="card-header"><h3>Ausgaben nach Kategorie</h3></div>
+          <div style="padding:20px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+            <canvas id="kategorie-chart" height="160" style="max-width:180px;"></canvas>
+            <div id="kategorie-legend" style="width:100%;display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM ROW: Offene Posten + Top Kunden -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;" class="animate animate-delay-4">
+
+        <!-- OFFENE POSTEN BALKEN -->
+        <div class="card">
+          <div class="card-header"><h3>Zahlungsstatus (Monat)</h3></div>
+          <div style="padding:20px 24px;">
+            <canvas id="status-chart" height="120"></canvas>
+          </div>
+        </div>
+
+        <!-- TOP KUNDEN -->
+        <div class="card">
+          <div class="card-header"><h3>Top Kunden nach Umsatz</h3></div>
+          <div style="padding:16px 0;">
+            <div id="top-kunden-list"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <div class="section" id="section-rechnungen">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Rechnungen</h2>
+          <p style="color:var(--ink-dim);font-size:14px;margin-top:2px;">Free Plan: 1 von 3 diesen Monat verwendet</p>
+        </div>
+        <button class="btn btn-primary" onclick="showToast('✅ Neue Rechnung – in echter App öffnet sich hier ein Formular!')">+ Neue Rechnung</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Alle Rechnungen</h3>
+          <input type="text" placeholder="Suchen..." style="width:200px;padding:6px 12px;font-size:13px;" />
+        </div>
+        <table>
+          <thead>
+            <tr><th>Nummer</th><th>Kunde</th><th>Datum</th><th>Betrag</th><th>Status</th><th>Aktionen</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>RE-2024-003</td><td>Schmidt GmbH</td><td>15.11.2024</td><td>€ 840,00</td>
+              <td><span class="status-badge status-paid">Bezahlt</span></td>
+              <td style="display:flex;gap:6px;">
+                <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="exportRechnungPDF({nr:'RE-2024-003',kunde:'Schmidt GmbH',datum:'15.11.2024',betrag:840,status:'Bezahlt',positionen:[{name:'Webdesign Paket',menge:1,preis:840}]})">📄 PDF</button>
+                <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="previewRechnung({nr:'RE-2024-003',kunde:'Schmidt GmbH',datum:'15.11.2024',betrag:840,status:'Bezahlt',positionen:[{name:'Webdesign Paket',menge:1,preis:840}]})">👁 Vorschau</button>
+              </td>
+            </tr>
+            <tr>
+              <td>RE-2024-002</td><td>Bauer & Co.</td><td>08.11.2024</td><td>€ 560,00</td>
+              <td><span class="status-badge status-open">Offen</span></td>
+              <td style="display:flex;gap:6px;">
+                <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="exportRechnungPDF({nr:'RE-2024-002',kunde:'Bauer & Co.',datum:'08.11.2024',betrag:560,status:'Offen',positionen:[{name:'Beratung 8h',menge:8,preis:70},{name:'Reisekosten',menge:1,preis:0}]})">📄 PDF</button>
+                <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="previewRechnung({nr:'RE-2024-002',kunde:'Bauer & Co.',datum:'08.11.2024',betrag:560,status:'Offen',positionen:[{name:'Beratung 8h',menge:8,preis:70}]})">👁 Vorschau</button>
+              </td>
+            </tr>
+            <tr>
+              <td>RE-2024-001</td><td>TechStart AG</td><td>01.11.2024</td><td>€ 1.440,00</td>
+              <td><span class="status-badge status-overdue">Überfällig</span></td>
+              <td style="display:flex;gap:6px;">
+                <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="exportRechnungPDF({nr:'RE-2024-001',kunde:'TechStart AG',datum:'01.11.2024',betrag:1440,status:'Überfällig',positionen:[{name:'App Entwicklung',menge:32,preis:45}]})">📄 PDF</button>
+                <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="previewRechnung({nr:'RE-2024-001',kunde:'TechStart AG',datum:'01.11.2024',betrag:1440,status:'Überfällig',positionen:[{name:'App Entwicklung',menge:32,preis:45}]})">👁 Vorschau</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- KUNDEN -->
+    <div class="section" id="section-kunden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Kunden</h2>
+          <p style="color:var(--ink-dim);font-size:14px;margin-top:2px;">Free Plan: 3 von 10 Kunden angelegt</p>
+        </div>
+        <button class="btn btn-primary" onclick="showToast('👤 Neuer Kunde – in echter App öffnet sich hier ein Formular!')">+ Neuer Kunde</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Name</th><th>Firma</th><th>E-Mail</th><th>Umsatz gesamt</th><th>Letzter Kontakt</th></tr></thead>
+          <tbody>
+            <tr><td>Thomas Schmidt</td><td>Schmidt GmbH</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f286dc81919a9f9b9686b2978a939f829e97dc9697">[email&#160;protected]</a></td><td>€ 3.200,00</td><td>15.11.2024</td></tr>
+            <tr><td>Lisa Bauer</td><td>Bauer & Co.</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="305c1e5251455542705548515d405c551e5455">[email&#160;protected]</a></td><td>€ 1.120,00</td><td>08.11.2024</td></tr>
+            <tr><td>Kai Weber</td><td>TechStart AG</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="761d58011314130436130e171b061a13581213">[email&#160;protected]</a></td><td>€ 4.800,00</td><td>01.11.2024</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ANGEBOTE (PRO) -->
+    <div class="section" id="section-angebote">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Angebote</h2>
+          <p style="color:var(--ink-dim);font-size:14px;margin-top:2px;">Professionelle Angebote erstellen & direkt in Rechnungen umwandeln</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAngebotModal()">+ Neues Angebot</button>
+      </div>
+
+      <!-- STATS -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+        <div class="stat-card"><div class="stat-label">Angebote gesamt</div><div class="stat-value" id="ang-count">0</div></div>
+        <div class="stat-card"><div class="stat-label">Angenommen</div><div class="stat-value" id="ang-angenommen" style="color:var(--sage);">0</div></div>
+        <div class="stat-card"><div class="stat-label">Offen / Gesendet</div><div class="stat-value" id="ang-offen" style="color:var(--amber);">0</div></div>
+        <div class="stat-card"><div class="stat-label">Wert (offen)</div><div class="stat-value" id="ang-wert">€ 0</div></div>
+      </div>
+
+      <!-- FILTER -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button class="filter-btn active" onclick="filterAngebote('alle',this)">Alle</button>
+        <button class="filter-btn" onclick="filterAngebote('Entwurf',this)">Entwurf</button>
+        <button class="filter-btn" onclick="filterAngebote('Gesendet',this)">Gesendet</button>
+        <button class="filter-btn" onclick="filterAngebote('Angenommen',this)">Angenommen</button>
+        <button class="filter-btn" onclick="filterAngebote('Abgelehnt',this)">Abgelehnt</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Nummer</th><th>Kunde</th><th>Titel</th><th>Betrag</th><th>Erstellt</th><th>Status</th><th>Aktionen</th></tr></thead>
+          <tbody id="angebote-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ZEITERFASSUNG (PRO) -->
+    <div class="section" id="section-zeit">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Zeiterfassung</h2>
+      </div>
+      <div class="card" style="text-align:center;padding:60px 40px;">
+        <div style="font-size:48px;margin-bottom:16px;">⏱️</div>
+        <h3 style="font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;margin-bottom:8px;">Zeiterfassung – Pro Feature</h3>
+        <p style="color:var(--ink-dim);font-size:14px;line-height:1.7;max-width:380px;margin:0 auto 24px;">Zeiten per Timer erfassen, Projekten zuordnen und direkt auf Rechnungen buchen. Stundensatz automatisch berechnet.</p>
+        <button class="btn btn-amber" onclick="showUpgradeModal()">⭐ Pro freischalten – 9 €/Monat</button>
+      </div>
+    </div>
+
+    <!-- ═══ STEUER / EÜR ═══ -->
+    <div class="section" id="section-euer">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Steuer & EÜR</h2>
+          <p style="color:var(--ink-dim);font-size:14px;margin-top:2px;">Einnahmen-Überschuss-Rechnung · Steuerschätzung · PDF für Steuerberater</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="euer-jahr" onchange="renderEuer()" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--warm-white);color:var(--ink);outline:none;">
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+          </select>
+          <button class="btn btn-secondary" onclick="exportEuerPDF()">📄 EÜR als PDF</button>
+        </div>
+      </div>
+
+      <!-- TOP SUMMARY CARDS -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" id="euer-cards">
+        <div class="stat-card" style="border-left:3px solid var(--sage);">
+          <div class="stat-label">Einnahmen (Gesamt)</div>
+          <div class="stat-value" id="euer-einnahmen" style="color:var(--sage);">€ 0</div>
+          <div class="stat-change" id="euer-einnahmen-sub"></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--danger);">
+          <div class="stat-label">Ausgaben (Gesamt)</div>
+          <div class="stat-value" id="euer-ausgaben-total" style="color:var(--danger);">€ 0</div>
+          <div class="stat-change" id="euer-ausgaben-sub"></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--amber);">
+          <div class="stat-label">Gewinn / Überschuss</div>
+          <div class="stat-value" id="euer-gewinn">€ 0</div>
+          <div class="stat-change" id="euer-gewinn-sub"></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #6a7aaa;background:linear-gradient(135deg,#eff3ff,var(--warm-white));">
+          <div class="stat-label">⚠️ Steuerrücklage</div>
+          <div class="stat-value" id="euer-steuer" style="color:#4060aa;">€ 0</div>
+          <div class="stat-change" id="euer-steuer-sub" style="color:#6a7aaa;"></div>
+        </div>
+      </div>
+
+      <!-- STEUER INFO BOX -->
+      <div id="euer-steuer-box" style="background:linear-gradient(135deg,#eff3ff,#f5f7ff);border:1px solid rgba(100,130,200,0.25);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="font-size:32px;flex-shrink:0;">🧮</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;color:#2a3a6a;margin-bottom:6px;">Deine Steuerschätzung <span id="euer-jahr-label">2024</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px;" id="euer-steuer-details"></div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;color:#6a7aaa;margin-bottom:4px;">Empfohlene Rücklage</div>
+          <div style="font-family:'Instrument Serif',serif;font-size:28px;color:#2a3a6a;font-weight:400;" id="euer-ruecklage-big">€ 0</div>
+          <div style="font-size:11px;color:#8898cc;">ca. 30% des Gewinns</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+        <!-- MONATLICHE AUFSTELLUNG -->
+        <div class="card">
+          <div class="card-header"><h3>Monatliche Aufstellung</h3></div>
+          <div style="padding:0;">
+            <table>
+              <thead><tr><th>Monat</th><th>Einnahmen</th><th>Ausgaben</th><th>Gewinn</th></tr></thead>
+              <tbody id="euer-monat-tbody"></tbody>
+              <tfoot id="euer-monat-tfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- AUSGABEN NACH KATEGORIEN -->
+        <div class="card">
+          <div class="card-header"><h3>Betriebsausgaben nach Kategorie</h3></div>
+          <div style="padding:16px 0;" id="euer-kat-list"></div>
+          <div style="padding:0 22px 20px;">
+            <div style="background:var(--cream);border-radius:8px;padding:14px 16px;">
+              <div style="font-size:11px;font-weight:600;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">EÜR Kurzfassung</div>
+              <div id="euer-kurz"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- EINSTELLUNGEN -->
+    <div class="section" id="section-einstellungen">
+      <div style="margin-bottom:28px;">
+        <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Einstellungen</h2>
+      </div>
+      <div class="settings-layout">
+        <div class="settings-nav">
+          <div class="settings-nav-item active" onclick="this.parentElement.querySelectorAll('.settings-nav-item').forEach(e=>e.classList.remove('active'));this.classList.add('active')">Profil</div>
+          <div class="settings-nav-item" onclick="this.parentElement.querySelectorAll('.settings-nav-item').forEach(e=>e.classList.remove('active'));this.classList.add('active')">Rechnungen</div>
+          <div class="settings-nav-item" onclick="this.parentElement.querySelectorAll('.settings-nav-item').forEach(e=>e.classList.remove('active'));this.classList.add('active')">Plan & Abrechnung</div>
+          <div class="settings-nav-item" onclick="this.parentElement.querySelectorAll('.settings-nav-item').forEach(e=>e.classList.remove('active'));this.classList.add('active')">Benachrichtigungen</div>
+          <div class="settings-nav-item" style="color:var(--danger);margin-top:16px;" onclick="logout()">Abmelden</div>
+        </div>
+        <div class="settings-panel">
+          <h3>Profil & Unternehmen</h3>
+
+          <!-- LOGO UPLOAD -->
+          <div style="margin-bottom:28px;">
+            <label style="display:block;margin-bottom:10px;">Firmen-Logo</label>
+            <div style="display:flex;align-items:flex-start;gap:20px;">
+              <!-- PREVIEW -->
+              <div id="logo-preview-wrap" style="width:110px;height:80px;border:1.5px dashed var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--cream);flex-shrink:0;overflow:hidden;cursor:pointer;transition:border-color 0.2s;" onclick="document.getElementById('logo-file-input').click()" title="Logo hochladen">
+                <img id="logo-preview-img" src="" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:none;" />
+                <div id="logo-placeholder" style="text-align:center;color:var(--ink-dim);">
+                  <div style="font-size:24px;margin-bottom:4px;">🖼️</div>
+                  <div style="font-size:11px;">Klicken zum<br>Hochladen</div>
+                </div>
+              </div>
+              <!-- UPLOAD CONTROLS -->
+              <div>
+                <p style="font-size:13px;color:var(--ink-dim);margin-bottom:12px;line-height:1.6;">PNG oder JPG, max. 2 MB.<br>Empfohlen: 400×200 px, transparenter Hintergrund.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button class="btn btn-secondary" style="font-size:13px;padding:7px 14px;" onclick="document.getElementById('logo-file-input').click()">📁 Datei wählen</button>
+                  <button class="btn btn-ghost" style="font-size:13px;padding:7px 14px;color:var(--danger);" id="logo-delete-btn" onclick="deleteLogo()" style="display:none;">✕ Entfernen</button>
+                </div>
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none;" onchange="handleLogoUpload(event)" />
+                <p id="logo-status" style="font-size:12px;color:var(--sage);margin-top:8px;display:none;">✓ Logo gespeichert</p>
+              </div>
+            </div>
+
+            <!-- INVOICE PREVIEW -->
+            <div id="invoice-preview-wrap" style="margin-top:20px;display:none;">
+              <p style="font-size:12px;font-weight:600;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Vorschau auf Rechnung</p>
+              <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:24px 28px;max-width:480px;box-shadow:var(--shadow);">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+                  <img id="invoice-logo-img" src="" alt="Logo" style="max-height:50px;max-width:160px;object-fit:contain;" />
+                  <div style="text-align:right;">
+                    <div style="font-family:'Instrument Serif',serif;font-size:20px;color:var(--ink);margin-bottom:2px;">Rechnung</div>
+                    <div style="font-size:12px;color:var(--ink-dim);">RE-2024-004</div>
+                    <div style="font-size:12px;color:var(--ink-dim);">12. März 2026</div>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                  <div>
+                    <div style="font-size:10px;font-weight:600;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Von</div>
+                    <div style="font-size:13px;color:var(--ink-soft);" id="preview-firma">Max Design</div>
+                    <div style="font-size:12px;color:var(--ink-dim);">Musterstraße 1, 12345 Berlin</div>
+                  </div>
+                  <div>
+                    <div style="font-size:10px;font-weight:600;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">An</div>
+                    <div style="font-size:13px;color:var(--ink-soft);">Schmidt GmbH</div>
+                    <div style="font-size:12px;color:var(--ink-dim);">Kundenstraße 5, 10115 Berlin</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:1px;background:var(--border);margin-bottom:24px;"></div>
+
+          <div class="form-row" style="margin-bottom:16px;">
+            <div class="form-group"><label>Vorname</label><input type="text" id="set-vorname" /></div>
+            <div class="form-group"><label>Nachname</label><input type="text" id="set-nachname" /></div>
+          </div>
+          <div class="form-group"><label>Firmenname</label><input type="text" id="set-firma" oninput="document.getElementById('preview-firma').textContent=this.value||'Dein Unternehmen'" /></div>
+          <div class="form-group"><label>E-Mail</label><input type="email" id="set-email" /></div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>E-Mail-Benachrichtigungen</h4>
+              <p>Bei neuen Zahlungen informiert werden</p>
+            </div>
+            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>Zahlungserinnerungen</h4>
+              <p>Automatisch bei überfälligen Rechnungen</p>
+            </div>
+            <button class="toggle" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn btn-primary" style="width:auto;" onclick="saveSettings()">Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MAHNWESEN ═══ -->
+    <div class="section" id="section-mahnwesen">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Mahnwesen</h2>
+          <p style="color:var(--ink-dim);font-size:14px;margin-top:2px;">Überfällige Rechnungen im Blick – automatisch erinnert</p>
+        </div>
+      </div>
+
+      <!-- AUTO-VORSCHLÄGE BANNER -->
+      <div id="mahnung-auto-banner" style="background:linear-gradient(135deg,#fdf0e8,#fdf3e0);border:1px solid rgba(200,131,42,0.3);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="font-size:28px;">⚠️</div>
+          <div>
+            <div style="font-weight:600;font-size:15px;color:#7a4010;margin-bottom:2px;">2 Rechnungen benötigen eine Mahnung</div>
+            <div style="font-size:13px;color:#9a6030;">RE-2024-001 ist 41 Tage überfällig · RE-2024-002 ist 34 Tage überfällig</div>
+          </div>
+        </div>
+        <button class="btn btn-amber" style="white-space:nowrap;flex-shrink:0;" onclick="autoMahnvorschlag()">Mahnungen vorschlagen</button>
+      </div>
+
+      <!-- STUFEN ERKLÄRUNG -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
+        <div class="stat-card" style="border-left:3px solid #5a7a5a;">
+          <div class="stat-label">1. Mahnung</div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);margin:4px 0;">Freundliche Erinnerung</div>
+          <div style="font-size:12px;color:var(--ink-dim);">Fällig + 14 Tage · Keine Gebühr · Höflicher Ton</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--amber);">
+          <div class="stat-label">2. Mahnung</div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);margin:4px 0;">Formelle Mahnung</div>
+          <div style="font-size:12px;color:var(--ink-dim);">Fällig + 28 Tage · Mahngebühr € 5,00 · Frist setzen</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--danger);">
+          <div class="stat-label">3. Mahnung</div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);margin:4px 0;">Letzte Warnung</div>
+          <div style="font-size:12px;color:var(--ink-dim);">Fällig + 42 Tage · Inkasso-Androhung · Letzte Frist</div>
+        </div>
+      </div>
+
+      <!-- MAHNUNGS-TABELLE -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Offene & überfällige Rechnungen</h3>
+          <div style="display:flex;gap:8px;">
+            <button class="filter-btn active" onclick="filterMahnungen('alle',this)">Alle</button>
+            <button class="filter-btn" onclick="filterMahnungen('ueberfaellig',this)">Überfällig</button>
+            <button class="filter-btn" onclick="filterMahnungen('gemahnt',this)">Gemahnt</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Rechnung</th><th>Kunde</th><th>Betrag</th><th>Fällig seit</th><th>Mahnstufe</th><th>Aktionen</th></tr></thead>
+          <tbody id="mahnungen-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ AUSGABEN ═══ -->
+    <div class="section" id="section-ausgaben">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Ausgaben</h2>
+          <p style="color:var(--ink-dim);font-size:14px;margin-top:2px;">Kosten erfassen & Kategorien im Blick behalten</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="exportAusgabenPDF()">📄 PDF Export</button>
+          <button class="btn btn-primary" onclick="openAusgabeModal()">+ Ausgabe erfassen</button>
+        </div>
+      </div>
+
+      <!-- SUMMARY CARDS -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;" id="ausgaben-summary">
+        <div class="stat-card"><div class="stat-label">Gesamt (Monat)</div><div class="stat-value" id="aus-gesamt">€ 0</div></div>
+        <div class="stat-card"><div class="stat-label">Betriebskosten</div><div class="stat-value" id="aus-betrieb">€ 0</div></div>
+        <div class="stat-card"><div class="stat-label">Material</div><div class="stat-value" id="aus-material">€ 0</div></div>
+        <div class="stat-card"><div class="stat-label">Sonstiges</div><div class="stat-value" id="aus-sonstige">€ 0</div></div>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="filter-btn active" onclick="filterAusgaben('alle', this)">Alle</button>
+        <button class="filter-btn" onclick="filterAusgaben('Betriebskosten', this)">Betriebskosten</button>
+        <button class="filter-btn" onclick="filterAusgaben('Material', this)">Material</button>
+        <button class="filter-btn" onclick="filterAusgaben('Fahrtkosten', this)">Fahrtkosten</button>
+        <button class="filter-btn" onclick="filterAusgaben('Software', this)">Software</button>
+        <button class="filter-btn" onclick="filterAusgaben('Marketing', this)">Marketing</button>
+        <button class="filter-btn" onclick="filterAusgaben('Sonstiges', this)">Sonstiges</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Datum</th><th>Beschreibung</th><th>Kategorie</th><th>Betrag</th><th>Beleg</th><th></th></tr></thead>
+          <tbody id="ausgaben-tbody">
+            <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div><h4>Noch keine Ausgaben</h4><p>Erfasse deine erste Ausgabe mit dem Button oben.</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ PRODUKTE ═══ -->
+    <div class="section" id="section-produkte">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <h2 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;">Produkte & Leistungen</h2>
+          <p style="color:var(--ink-dim);font-size:14px;margin-top:2px;">Dein Katalog – schnell auf Rechnungen einfügen</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="exportProduktePDF()">📄 PDF Export</button>
+          <button class="btn btn-primary" onclick="openProduktModal()">+ Produkt anlegen</button>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+        <div class="stat-card"><div class="stat-label">Produkte gesamt</div><div class="stat-value" id="prod-count">0</div></div>
+        <div class="stat-card"><div class="stat-label">Ø Preis</div><div class="stat-value" id="prod-avg">€ 0</div></div>
+        <div class="stat-card"><div class="stat-label">Kategorien</div><div class="stat-value" id="prod-cats">0</div></div>
+      </div>
+
+      <!-- PRODUCT GRID -->
+      <div id="produkte-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        <div style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon">📦</div><h4>Noch keine Produkte</h4><p>Lege Produkte & Leistungen an, um sie schnell auf Rechnungen zu setzen.</p></div></div>
+      </div>
+    </div>
+
+  </div><!-- end app-content -->
+</div><!-- end page-app -->
+
+<!-- ═══ RECHNUNG VORSCHAU MODAL ═══ -->
+<div class="modal-overlay" id="rechnung-preview-modal" onclick="if(event.target===this)closePreview()">
+  <div class="modal" style="max-width:620px;text-align:left;padding:0;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid var(--border);">
+      <h3 style="font-family:'Instrument Serif',serif;font-size:20px;font-weight:400;">Rechnungsvorschau</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-amber" style="font-size:13px;padding:8px 16px;" id="preview-download-btn">📄 PDF herunterladen</button>
+        <button class="btn btn-ghost" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div style="padding:32px;max-height:70vh;overflow-y:auto;">
+      <div id="rechnung-preview-content" style="background:white;border:1px solid var(--border);border-radius:8px;padding:40px;font-size:13px;line-height:1.6;color:#222;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ANGEBOT MODAL ═══ -->
+<div class="modal-overlay" id="angebot-modal" onclick="if(event.target===this)closeAngebotModal()">
+  <div class="modal" style="max-width:600px;text-align:left;max-height:90vh;overflow-y:auto;">
+    <h3 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;margin-bottom:20px;" id="angebot-modal-title">Neues Angebot</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Kunde</label>
+        <input type="text" id="ang-kunde" placeholder="z.B. Schmidt GmbH" />
+      </div>
+      <div class="form-group">
+        <label>Angebots-Titel</label>
+        <input type="text" id="ang-titel" placeholder="z.B. Webdesign Paket 2024" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Einleitung (optional)</label>
+      <textarea id="ang-einleitung" rows="2" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;outline:none;" placeholder="Vielen Dank für Ihre Anfrage. Gerne unterbreiten wir Ihnen folgendes Angebot..."></textarea>
+    </div>
+
+    <!-- POSITIONEN -->
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="margin:0;">Positionen</label>
+        <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="addAngebotPosition()">+ Position</button>
+      </div>
+      <div id="ang-positionen">
+        <!-- positions added dynamically -->
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <div style="min-width:200px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--ink-dim);padding:3px 0;">
+            <span>Netto</span><span id="ang-netto">€ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--ink-dim);padding:3px 0;">
+            <span>§19 UStG</span><span>€ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;padding:6px 0;border-top:1.5px solid var(--ink);margin-top:4px;">
+            <span>Gesamt</span><span id="ang-gesamt">€ 0,00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="form-group">
+        <label>Gültig bis</label>
+        <input type="date" id="ang-gueltig" />
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="ang-status">
+          <option>Entwurf</option>
+          <option>Gesendet</option>
+          <option>Angenommen</option>
+          <option>Abgelehnt</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Schlussbemerkung (optional)</label>
+      <textarea id="ang-schluss" rows="2" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;outline:none;" placeholder="Wir freuen uns auf Ihre Rückmeldung und stehen für Rückfragen gerne zur Verfügung."></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeAngebotModal()">Abbrechen</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="saveAngebot('Entwurf')">💾 Entwurf</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveAngebot()">✓ Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAHNUNG MODAL ═══ -->
+<div class="modal-overlay" id="mahnung-modal" onclick="if(event.target===this)closeMahnungModal()">
+  <div class="modal" style="max-width:520px;text-align:left;">
+    <h3 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;margin-bottom:6px;" id="mahnung-modal-title">Mahnung erstellen</h3>
+    <p style="font-size:13px;color:var(--ink-dim);margin-bottom:20px;" id="mahnung-modal-sub"></p>
+
+    <!-- Stufen-Auswahl -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;" id="mahnung-stufen">
+      <div class="mahnstufe-btn" data-stufe="1" onclick="selectMahnstufe(1)" style="border:2px solid var(--sage);background:#f0faf2;">
+        <div style="font-size:18px;margin-bottom:4px;">📩</div>
+        <div style="font-weight:600;font-size:13px;">1. Mahnung</div>
+        <div style="font-size:11px;color:var(--ink-dim);">Freundlich · keine Gebühr</div>
+      </div>
+      <div class="mahnstufe-btn" data-stufe="2" onclick="selectMahnstufe(2)">
+        <div style="font-size:18px;margin-bottom:4px;">📋</div>
+        <div style="font-weight:600;font-size:13px;">2. Mahnung</div>
+        <div style="font-size:11px;color:var(--ink-dim);">Formell · € 5,00 Gebühr</div>
+      </div>
+      <div class="mahnstufe-btn" data-stufe="3" onclick="selectMahnstufe(3)">
+        <div style="font-size:18px;margin-bottom:4px;">⚖️</div>
+        <div style="font-weight:600;font-size:13px;">3. Mahnung</div>
+        <div style="font-size:11px;color:var(--ink-dim);">Inkasso-Androhung</div>
+      </div>
+    </div>
+
+    <!-- Vorschau Text -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;margin-bottom:6px;">Mahnungstext <span style="color:var(--ink-dim);font-weight:400;">(bearbeitbar)</span></label>
+      <textarea id="mahnung-text" rows="7" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;resize:vertical;outline:none;"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="form-group">
+        <label>Zahlungsfrist setzen</label>
+        <input type="date" id="mahnung-frist" />
+      </div>
+      <div class="form-group" id="mahngebuehr-wrap">
+        <label>Mahngebühr (€)</label>
+        <input type="number" id="mahnung-gebuehr" value="5.00" step="0.50" min="0" />
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeMahnungModal()">Abbrechen</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="exportMahnungPDF()">📄 PDF</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveMahnung()">✓ Mahnung senden</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ AUSGABE MODAL ═══ -->
+<div class="modal-overlay" id="ausgabe-modal" onclick="if(event.target===this)closeAusgabeModal()">
+  <div class="modal" style="max-width:480px;text-align:left;">
+    <h3 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;margin-bottom:20px;">Ausgabe erfassen</h3>
+    <div class="form-group">
+      <label>Beschreibung</label>
+      <input type="text" id="aus-beschreibung" placeholder="z.B. Filament PLA 1kg" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Betrag (€)</label>
+        <input type="number" id="aus-betrag" placeholder="0,00" step="0.01" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Datum</label>
+        <input type="date" id="aus-datum" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Kategorie</label>
+      <select id="aus-kategorie">
+        <option>Betriebskosten</option>
+        <option>Material</option>
+        <option>Fahrtkosten</option>
+        <option>Software</option>
+        <option>Marketing</option>
+        <option>Sonstiges</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notiz (optional)</label>
+      <input type="text" id="aus-notiz" placeholder="Zusätzliche Infos..." />
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeAusgabeModal()">Abbrechen</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveAusgabe()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRODUKT MODAL ═══ -->
+<div class="modal-overlay" id="produkt-modal" onclick="if(event.target===this)closeProduktModal()">
+  <div class="modal" style="max-width:480px;text-align:left;">
+    <h3 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;margin-bottom:20px;" id="produkt-modal-title">Produkt anlegen</h3>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="prod-name" placeholder="z.B. 3D-Druck Namensschild" />
+    </div>
+    <div class="form-group">
+      <label>Beschreibung</label>
+      <input type="text" id="prod-beschreibung" placeholder="Kurze Produktbeschreibung" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Preis (€)</label>
+        <input type="number" id="prod-preis" placeholder="0,00" step="0.01" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Einheit</label>
+        <select id="prod-einheit">
+          <option>Stück</option>
+          <option>Stunde</option>
+          <option>Pauschal</option>
+          <option>kg</option>
+          <option>m²</option>
+          <option>Monat</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Kategorie</label>
+      <select id="prod-kategorie">
+        <option>Produkt</option>
+        <option>Dienstleistung</option>
+        <option>Abo / Lizenz</option>
+        <option>Sonstiges</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeProduktModal()">Abbrechen</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveProdukt()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     UPGRADE MODAL
+═══════════════════════════════════ -->
+<div class="modal-overlay" id="upgrade-modal" onclick="if(event.target===this)hideUpgradeModal()">
+  <div class="modal">
+    <div class="modal-icon">⭐</div>
+    <h3>Klario Pro freischalten</h3>
+    <p>Unbegrenzte Rechnungen, Angebote, Zeiterfassung, Logo auf Rechnungen und mehr.</p>
+    <div class="price-display">
+      <div class="price-amount">9 €</div>
+      <div class="price-period">pro Monat · jederzeit kündbar</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="hideUpgradeModal()">Später</button>
+      <button class="btn btn-amber" onclick="showToast('🚀 In echter App: Weiterleitung zu Stripe!');hideUpgradeModal()">Jetzt upgraden</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── STATE ──
+// ══════════════════════════════════════════
+// KONFIGURATION – hier deine Keys eintragen
+// ══════════════════════════════════════════
+const SUPABASE_URL  = 'https://kntcxhudadpyfdyhihuo.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudGN4aHVkYWRweWZkeWhpaHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDAyMDksImV4cCI6MjA4ODgxNjIwOX0.K4niNGgsw8v2t9e1sbPEgJOR3IZ-Kdo3Lpp02aN2SNI';
+const STRIPE_KEY    = 'pk_test_51TARhzKragttboTfwUxiQhWX3nEuJEaAojtHS2DSXAnz84y9FaUdrqHzwYVAgjkwMzmzMqdiCUXdJ6Ape0gpVmuA00Cz1fqgOW';
+
+// Stripe Pro Price ID – später in Stripe Dashboard erstellen
+// Geh zu: Stripe → Produkte → Neues Produkt → "Klario Pro" → 9€/Monat → Price ID kopieren
+const STRIPE_PRICE_ID = 'price_HIER_DEINE_PRICE_ID'; // ← später ersetzen
+
+// ── SUPABASE INIT ──
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const _stripe   = window.Stripe ? window.Stripe(STRIPE_KEY) : null;
+
+let currentUser = null;
+let selectedPlanChoice = 'free';
+
+// ── AUTH: Session beim Laden prüfen ──
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (session?.user) {
+    await loadUserAndStart(session.user);
+  }
+
+  // Auth State Listener (Magic Link Redirect)
+  _supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await loadUserAndStart(session.user);
+    }
+    if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      showPage('login');
+    }
+  });
+});
+
+async function loadUserAndStart(user) {
+  // Profil aus Supabase laden (Tabelle: profiles)
+  const { data: profile } = await _supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (profile) {
+    currentUser = {
+      id: user.id,
+      email: user.email,
+      vorname: profile.vorname || '',
+      nachname: profile.nachname || '',
+      firma: profile.firma || '',
+      plan: profile.plan || 'free',
+    };
+    initApp();
+    showPage('app');
+  } else {
+    // Neuer User → Onboarding
+    currentUser = { id: user.id, email: user.email, vorname: '', nachname: '', firma: '', plan: 'free' };
+    showPage('onboarding');
+  }
+}
+
+// ── LOGIN: Magic Link senden ──
+async function sendMagicLink() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email || !email.includes('@')) {
+    showToast('⚠️ Bitte gib eine gültige E-Mail ein.');
+    return;
+  }
+
+  const { error } = await _supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: 'https://nic-cyber-ger.github.io/klario/',
+    }
+  });
+
+  if (error) {
+    showToast('⚠️ Fehler: ' + error.message);
+    return;
+  }
+
+  document.getElementById('sent-email').textContent = email;
+  document.getElementById('login-form-state').style.display = 'none';
+  document.getElementById('login-sent-state').style.display = 'block';
+}
+
+function resetLoginForm() {
+  document.getElementById('login-form-state').style.display = 'block';
+  document.getElementById('login-sent-state').style.display = 'none';
+}
+
+// ── DEMO LOGIN (bleibt für Tests) ──
+function demoLogin() {
+  currentUser = { vorname: 'Max', nachname: 'Mustermann', firma: 'Max Design', email: 'max@demo.de', plan: 'free' };
+  showPage('onboarding');
+  prefillOnboarding();
+}
+
+function prefillOnboarding() {
+  document.getElementById('ob-vorname').value = 'Max';
+  document.getElementById('ob-nachname').value = 'Mustermann';
+  document.getElementById('ob-firma').value = 'Max Design';
+  document.getElementById('ob-beruf').value = 'Freelancer / Designer';
+}
+
+// ── ONBOARDING ──
+let currentStep = 0;
+
+function nextOnboardStep(step) {
+  document.getElementById('onboard-step-' + currentStep).style.display = 'none';
+  document.getElementById('sdot-' + currentStep).classList.remove('active');
+  document.getElementById('sdot-' + currentStep).classList.add('done');
+  currentStep = step;
+  document.getElementById('onboard-step-' + step).style.display = 'block';
+  document.getElementById('sdot-' + step).classList.add('active');
+  document.getElementById('sdot-' + step).classList.remove('done');
+}
+
+function selectPlan(plan) {
+  selectedPlanChoice = plan;
+  const free = document.getElementById('plan-free');
+  const pro = document.getElementById('plan-pro');
+  if (plan === 'free') {
+    free.style.border = '2px solid var(--amber)';
+    free.style.background = 'var(--amber-pale)';
+    pro.style.border = '1.5px solid var(--border)';
+    pro.style.background = '';
+  } else {
+    pro.style.border = '2px solid var(--amber)';
+    pro.style.background = 'var(--amber-pale)';
+    free.style.border = '1.5px solid var(--border)';
+    free.style.background = '';
+  }
+}
+
+async function finishOnboarding() {
+  const vorname = document.getElementById('ob-vorname').value || 'Nutzer';
+  const nachname = document.getElementById('ob-nachname').value || '';
+  const firma = document.getElementById('ob-firma').value || '';
+
+  currentUser = { ...currentUser, vorname, nachname, firma, plan: selectedPlanChoice };
+
+  // Profil in Supabase speichern (nur wenn echter User)
+  if (currentUser.id) {
+    await _supabase.from('profiles').upsert({
+      id: currentUser.id,
+      email: currentUser.email,
+      vorname,
+      nachname,
+      firma,
+      plan: selectedPlanChoice,
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  // Pro gewählt → Stripe Checkout
+  if (selectedPlanChoice === 'pro') {
+    await startStripeCheckout();
+    return;
+  }
+
+  initApp();
+  showPage('app');
+}
+
+// ── STRIPE CHECKOUT ──
+async function startStripeCheckout() {
+  if (!_stripe) {
+    showToast('⚠️ Stripe nicht geladen – Demo-Modus.');
+    initApp();
+    showPage('app');
+    return;
+  }
+
+  if (STRIPE_PRICE_ID === 'price_HIER_DEINE_PRICE_ID') {
+    showToast('ℹ️ Stripe Price ID noch nicht konfiguriert – Free-Modus aktiv.');
+    currentUser.plan = 'free';
+    initApp();
+    showPage('app');
+    return;
+  }
+
+  // Für echten Checkout braucht man einen Backend-Server
+  // Fürs Erste: direkt zur App, Stripe später via Backend
+  showToast('🚀 Stripe Checkout – kommt mit Backend-Integration!');
+  initApp();
+  showPage('app');
+}
+
+// Upgrade Button im App
+async function showUpgradeModal() {
+  if (STRIPE_PRICE_ID !== 'price_HIER_DEINE_PRICE_ID' && _stripe) {
+    await startStripeCheckout();
+  } else {
+    document.getElementById('upgrade-modal').classList.add('show');
+  }
+}
+
+// ── LOGOUT ──
+async function logout() {
+  await _supabase.auth.signOut();
+  currentUser = null;
+  showPage('login');
+  showToast('👋 Erfolgreich abgemeldet.');
+}
+function initApp() {
+  const now = new Date();
+  const days = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  document.getElementById('dash-date').textContent =
+    days[now.getDay()] + ', ' + now.getDate() + '. ' + months[now.getMonth()] + ' ' + now.getFullYear();
+  document.getElementById('dash-name').textContent = currentUser.vorname;
+  document.getElementById('user-avatar').textContent = currentUser.vorname[0].toUpperCase();
+
+  if (currentUser.plan === 'pro') {
+    document.getElementById('plan-badge-nav').textContent = 'Pro ⭐';
+    document.getElementById('plan-badge-nav').classList.add('pro');
+    document.getElementById('free-limit-card').style.display = 'none';
+  }
+
+  // Fill settings
+  document.getElementById('set-vorname').value = currentUser.vorname || '';
+  document.getElementById('set-nachname').value = currentUser.nachname || '';
+  document.getElementById('set-firma').value = currentUser.firma || '';
+
+  renderAusgaben();
+  renderProdukte();
+  renderMahnungen();
+  renderAngebote();
+  renderEuer();
+  setTimeout(initCharts, 100);
+}
+
+function showSection(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ── MODALS & TOASTS ──
+function showUpgradeModal() {
+  document.getElementById('upgrade-modal').classList.add('show');
+}
+
+function hideUpgradeModal() {
+  document.getElementById('upgrade-modal').classList.remove('show');
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── NAVIGATION ──
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
+  const pg = document.getElementById('page-' + name);
+  pg.style.display = 'flex';
+  pg.classList.add('active');
+}
+
+// ── AUSGABEN ──
+let ausgaben = [
+  { id: 1, datum: '2024-11-10', beschreibung: 'Filament PLA 5kg', kategorie: 'Material', betrag: 89.90, notiz: 'Amazon' },
+  { id: 2, datum: '2024-11-08', beschreibung: 'GitHub Pro', kategorie: 'Software', betrag: 4.00, notiz: '' },
+  { id: 3, datum: '2024-11-05', beschreibung: 'Stromrechnung November', kategorie: 'Betriebskosten', betrag: 67.50, notiz: '' },
+  { id: 4, datum: '2024-11-01', beschreibung: 'Google Ads Kampagne', kategorie: 'Marketing', betrag: 30.00, notiz: 'Etsy-Boost' },
+];
+let ausgabenFilter = 'alle';
+let ausgabeEditId = null;
+
+const katColors = {
+  'Betriebskosten': '#c8832a',
+  'Material': '#5a7a5a',
+  'Fahrtkosten': '#6a7aaa',
+  'Software': '#aa6a9a',
+  'Marketing': '#c04040',
+  'Sonstiges': '#9a9590'
+};
+
+function renderAusgaben() {
+  const filtered = ausgabenFilter === 'alle' ? ausgaben : ausgaben.filter(a => a.kategorie === ausgabenFilter);
+  const tbody = document.getElementById('ausgaben-tbody');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div><h4>Keine Ausgaben gefunden</h4><p>Noch keine Einträge in dieser Kategorie.</p></div></td></tr>`;
+  } else {
+    tbody.innerHTML = filtered.map(a => `
+      <tr>
+        <td>${formatDate(a.datum)}</td>
+        <td>
+          <div style="font-weight:500;color:var(--ink);">${a.beschreibung}</div>
+          ${a.notiz ? `<div style="font-size:12px;color:var(--ink-dim);">${a.notiz}</div>` : ''}
+        </td>
+        <td><span style="display:inline-flex;align-items:center;font-size:12px;font-weight:600;color:${katColors[a.kategorie]||'#888'};">
+          <span class="cat-dot" style="background:${katColors[a.kategorie]||'#888'};"></span>${a.kategorie}
+        </span></td>
+        <td style="font-family:'Instrument Serif',serif;font-size:16px;">€ ${a.betrag.toFixed(2)}</td>
+        <td><button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;" onclick="showToast('📎 Beleg-Upload kommt in Phase 2!')">📎 Anhängen</button></td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;" onclick="editAusgabe(${a.id})">✏️</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger);" onclick="deleteAusgabe(${a.id})">✕</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+  updateAusgabenSummary();
+}
+
+function updateAusgabenSummary() {
+  const gesamt = ausgaben.reduce((s, a) => s + a.betrag, 0);
+  const betrieb = ausgaben.filter(a => a.kategorie === 'Betriebskosten').reduce((s, a) => s + a.betrag, 0);
+  const material = ausgaben.filter(a => a.kategorie === 'Material').reduce((s, a) => s + a.betrag, 0);
+  const sonstige = ausgaben.filter(a => !['Betriebskosten','Material'].includes(a.kategorie)).reduce((s, a) => s + a.betrag, 0);
+  document.getElementById('aus-gesamt').textContent = '€ ' + gesamt.toFixed(2);
+  document.getElementById('aus-betrieb').textContent = '€ ' + betrieb.toFixed(2);
+  document.getElementById('aus-material').textContent = '€ ' + material.toFixed(2);
+  document.getElementById('aus-sonstige').textContent = '€ ' + sonstige.toFixed(2);
+}
+
+function filterAusgaben(kat, btn) {
+  ausgabenFilter = kat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAusgaben();
+}
+
+function openAusgabeModal(id = null) {
+  ausgabeEditId = id;
+  const today = new Date().toISOString().split('T')[0];
+  if (id) {
+    const a = ausgaben.find(x => x.id === id);
+    document.getElementById('aus-beschreibung').value = a.beschreibung;
+    document.getElementById('aus-betrag').value = a.betrag;
+    document.getElementById('aus-datum').value = a.datum;
+    document.getElementById('aus-kategorie').value = a.kategorie;
+    document.getElementById('aus-notiz').value = a.notiz;
+  } else {
+    document.getElementById('aus-beschreibung').value = '';
+    document.getElementById('aus-betrag').value = '';
+    document.getElementById('aus-datum').value = today;
+    document.getElementById('aus-kategorie').value = 'Betriebskosten';
+    document.getElementById('aus-notiz').value = '';
+  }
+  document.getElementById('ausgabe-modal').classList.add('show');
+}
+
+function closeAusgabeModal() { document.getElementById('ausgabe-modal').classList.remove('show'); }
+
+function saveAusgabe() {
+  const beschreibung = document.getElementById('aus-beschreibung').value.trim();
+  const betrag = parseFloat(document.getElementById('aus-betrag').value);
+  if (!beschreibung || isNaN(betrag) || betrag <= 0) {
+    showToast('⚠️ Bitte Beschreibung und gültigen Betrag eingeben.');
+    return;
+  }
+  const data = {
+    beschreibung,
+    betrag,
+    datum: document.getElementById('aus-datum').value,
+    kategorie: document.getElementById('aus-kategorie').value,
+    notiz: document.getElementById('aus-notiz').value.trim(),
+  };
+  if (ausgabeEditId) {
+    const idx = ausgaben.findIndex(a => a.id === ausgabeEditId);
+    ausgaben[idx] = { ...ausgaben[idx], ...data };
+    showToast('✅ Ausgabe aktualisiert!', 'success');
+  } else {
+    ausgaben.unshift({ id: Date.now(), ...data });
+    showToast('✅ Ausgabe gespeichert!', 'success');
+  }
+  closeAusgabeModal();
+  renderAusgaben();
+  buildKategorieChart();
+}
+
+function editAusgabe(id) { openAusgabeModal(id); }
+
+function deleteAusgabe(id) {
+  ausgaben = ausgaben.filter(a => a.id !== id);
+  renderAusgaben();
+  showToast('Ausgabe gelöscht.');
+}
+
+// ── PRODUKTE ──
+let produkte = [
+  { id: 1, name: '3D-Druck Namensschild', beschreibung: 'Personalisiertes Namensschild, verschiedene Farben', preis: 12.90, einheit: 'Stück', kategorie: 'Produkt' },
+  { id: 2, name: 'Auto Dart System', beschreibung: 'Automatisches Dart-Auslösesystem für Nerf-Blaster', preis: 34.90, einheit: 'Stück', kategorie: 'Produkt' },
+  { id: 3, name: 'Design-Beratung', beschreibung: 'Individuelle Produktberatung & Anpassung', preis: 45.00, einheit: 'Stunde', kategorie: 'Dienstleistung' },
+];
+let produktEditId = null;
+
+function renderProdukte() {
+  const grid = document.getElementById('produkte-grid');
+  if (produkte.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;"><div class="empty-state"><div class="empty-icon">📦</div><h4>Noch keine Produkte</h4><p>Lege Produkte & Leistungen an.</p></div></div>`;
+  } else {
+    grid.innerHTML = produkte.map(p => `
+      <div class="produkt-card">
+        <div class="produkt-card-cat">
+          <span class="cat-dot" style="background:${p.kategorie==='Dienstleistung'?'#5a7a5a':p.kategorie==='Abo / Lizenz'?'#6a7aaa':'#c8832a'};"></span>
+          ${p.kategorie}
+        </div>
+        <h4>${p.name}</h4>
+        <p>${p.beschreibung}</p>
+        <div class="produkt-card-footer">
+          <div>
+            <span class="produkt-preis">€ ${parseFloat(p.preis).toFixed(2)}</span>
+            <span class="produkt-einheit">/ ${p.einheit}</span>
+          </div>
+          <div class="produkt-actions">
+            <button onclick="showToast('📄 Auf Rechnung gesetzt: ${p.name}', 'success')">+ Rechnung</button>
+            <button onclick="editProdukt(${p.id})">✏️</button>
+            <button class="del-btn" onclick="deleteProdukt(${p.id})">✕</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  updateProdukteStats();
+}
+
+function updateProdukteStats() {
+  document.getElementById('prod-count').textContent = produkte.length;
+  const avg = produkte.length ? produkte.reduce((s, p) => s + parseFloat(p.preis), 0) / produkte.length : 0;
+  document.getElementById('prod-avg').textContent = '€ ' + avg.toFixed(2);
+  const cats = new Set(produkte.map(p => p.kategorie)).size;
+  document.getElementById('prod-cats').textContent = cats;
+}
+
+function openProduktModal(id = null) {
+  produktEditId = id;
+  document.getElementById('produkt-modal-title').textContent = id ? 'Produkt bearbeiten' : 'Produkt anlegen';
+  if (id) {
+    const p = produkte.find(x => x.id === id);
+    document.getElementById('prod-name').value = p.name;
+    document.getElementById('prod-beschreibung').value = p.beschreibung;
+    document.getElementById('prod-preis').value = p.preis;
+    document.getElementById('prod-einheit').value = p.einheit;
+    document.getElementById('prod-kategorie').value = p.kategorie;
+  } else {
+    ['prod-name','prod-beschreibung','prod-preis'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('prod-einheit').value = 'Stück';
+    document.getElementById('prod-kategorie').value = 'Produkt';
+  }
+  document.getElementById('produkt-modal').classList.add('show');
+}
+
+function closeProduktModal() { document.getElementById('produkt-modal').classList.remove('show'); }
+
+function saveProdukt() {
+  const name = document.getElementById('prod-name').value.trim();
+  const preis = parseFloat(document.getElementById('prod-preis').value);
+  if (!name || isNaN(preis) || preis < 0) {
+    showToast('⚠️ Bitte Name und Preis eingeben.');
+    return;
+  }
+  const data = {
+    name,
+    beschreibung: document.getElementById('prod-beschreibung').value.trim(),
+    preis,
+    einheit: document.getElementById('prod-einheit').value,
+    kategorie: document.getElementById('prod-kategorie').value,
+  };
+  if (produktEditId) {
+    const idx = produkte.findIndex(p => p.id === produktEditId);
+    produkte[idx] = { ...produkte[idx], ...data };
+    showToast('✅ Produkt aktualisiert!', 'success');
+  } else {
+    produkte.unshift({ id: Date.now(), ...data });
+    showToast('✅ Produkt angelegt!', 'success');
+  }
+  closeProduktModal();
+  renderProdukte();
+}
+
+function editProdukt(id) { openProduktModal(id); }
+
+function deleteProdukt(id) {
+  produkte = produkte.filter(p => p.id !== id);
+  renderProdukte();
+  showToast('Produkt gelöscht.');
+}
+
+function formatDate(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+// ── ANGEBOTE ──
+let angebote = [
+  { id: 'ANG-2024-002', kunde: 'Schmidt GmbH', titel: 'SEO Paket Q1 2025', status: 'Gesendet', datum: '2024-11-10', gueltig: '2024-12-10', positionen: [{name:'SEO Analyse',menge:1,preis:350},{name:'Content Erstellung 10 Artikel',menge:10,preis:80}], einleitung:'', schluss:'' },
+  { id: 'ANG-2024-001', kunde: 'TechStart AG', titel: 'App Redesign', status: 'Angenommen', datum: '2024-10-20', gueltig: '2024-11-20', positionen: [{name:'UI/UX Design',menge:1,preis:1200},{name:'Prototyping',menge:1,preis:400}], einleitung:'', schluss:'' },
+];
+let angeboteFilter = 'alle';
+let angebotEditId = null;
+let angPositionen = [];
+let angCounter = 3;
+
+const angStatusColors = {
+  'Entwurf':    { bg:'#f0f4ff', color:'#4060aa' },
+  'Gesendet':   { bg:'var(--amber-pale)', color:'var(--amber)' },
+  'Angenommen': { bg:'#f0faf2', color:'var(--sage)' },
+  'Abgelehnt':  { bg:'#fdf0f0', color:'var(--danger)' },
+};
+
+function renderAngebote() {
+  const tbody = document.getElementById('angebote-tbody');
+  const data = angeboteFilter === 'alle' ? angebote : angebote.filter(a => a.status === angeboteFilter);
+
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><h4>Keine Angebote gefunden</h4><p>Erstelle dein erstes Angebot.</p></div></td></tr>`;
+  } else {
+    tbody.innerHTML = data.map(a => {
+      const total = a.positionen.reduce((s,p) => s + p.menge * p.preis, 0);
+      const sc = angStatusColors[a.status] || angStatusColors['Entwurf'];
+      const abgelaufen = new Date(a.gueltig) < new Date() && a.status !== 'Angenommen';
+      return `<tr>
+        <td style="font-weight:500;">${a.id}</td>
+        <td>${a.kunde}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.titel}</td>
+        <td style="font-family:'Instrument Serif',serif;font-size:15px;">€ ${total.toFixed(2)}</td>
+        <td style="font-size:13px;">${formatDate(a.datum)}</td>
+        <td>
+          <span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${sc.bg};color:${sc.color};">${a.status}</span>
+          ${abgelaufen ? '<span style="font-size:10px;color:var(--danger);margin-left:4px;">Abgelaufen</span>' : ''}
+        </td>
+        <td>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;" onclick="previewAngebot('${a.id}')">👁</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;" onclick="exportAngebotPDF('${a.id}')">📄</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;color:var(--sage);border-color:var(--sage);" onclick="angebotZuRechnung('${a.id}')">→ Rechnung</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;" onclick="editAngebot('${a.id}')">✏️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  updateAngeboteStats();
+}
+
+function updateAngeboteStats() {
+  document.getElementById('ang-count').textContent = angebote.length;
+  document.getElementById('ang-angenommen').textContent = angebote.filter(a => a.status === 'Angenommen').length;
+  document.getElementById('ang-offen').textContent = angebote.filter(a => ['Entwurf','Gesendet'].includes(a.status)).length;
+  const wert = angebote.filter(a => ['Entwurf','Gesendet'].includes(a.status)).reduce((s,a) => s + a.positionen.reduce((ss,p) => ss+p.menge*p.preis,0), 0);
+  document.getElementById('ang-wert').textContent = '€ ' + wert.toFixed(2);
+}
+
+function filterAngebote(f, btn) {
+  angeboteFilter = f;
+  document.querySelectorAll('#section-angebote .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAngebote();
+}
+
+function openAngebotModal(id = null) {
+  angebotEditId = id;
+  document.getElementById('angebot-modal-title').textContent = id ? 'Angebot bearbeiten' : 'Neues Angebot';
+  angPositionen = [];
+
+  const frist = new Date(); frist.setDate(frist.getDate() + 30);
+  document.getElementById('ang-gueltig').value = frist.toISOString().split('T')[0];
+
+  if (id) {
+    const a = angebote.find(x => x.id === id);
+    document.getElementById('ang-kunde').value = a.kunde;
+    document.getElementById('ang-titel').value = a.titel;
+    document.getElementById('ang-einleitung').value = a.einleitung || '';
+    document.getElementById('ang-schluss').value = a.schluss || '';
+    document.getElementById('ang-gueltig').value = a.gueltig;
+    document.getElementById('ang-status').value = a.status;
+    angPositionen = a.positionen.map(p => ({...p}));
+  } else {
+    ['ang-kunde','ang-titel','ang-einleitung','ang-schluss'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('ang-status').value = 'Entwurf';
+    angPositionen = [{ name: '', menge: 1, preis: 0 }];
+  }
+
+  renderAngPositionen();
+  document.getElementById('angebot-modal').classList.add('show');
+}
+
+function closeAngebotModal() { document.getElementById('angebot-modal').classList.remove('show'); }
+
+function renderAngPositionen() {
+  const container = document.getElementById('ang-positionen');
+  container.innerHTML = angPositionen.map((p, i) => `
+    <div style="display:grid;grid-template-columns:1fr 70px 100px 36px;gap:8px;margin-bottom:8px;align-items:center;">
+      <input type="text" value="${p.name}" placeholder="Beschreibung" oninput="angPositionen[${i}].name=this.value"
+        style="padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;color:var(--ink);background:var(--cream);" />
+      <input type="number" value="${p.menge}" min="0.5" step="0.5" oninput="angPositionen[${i}].menge=parseFloat(this.value)||0;updateAngSumme()"
+        style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;color:var(--ink);background:var(--cream);" placeholder="Menge" />
+      <input type="number" value="${p.preis}" min="0" step="0.01" oninput="angPositionen[${i}].preis=parseFloat(this.value)||0;updateAngSumme()"
+        style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;text-align:right;font-family:'DM Sans',sans-serif;outline:none;color:var(--ink);background:var(--cream);" placeholder="€ Preis" />
+      <button onclick="removeAngPosition(${i})" style="width:34px;height:34px;border:1px solid var(--border);border-radius:7px;background:none;cursor:pointer;font-size:14px;color:var(--ink-dim);">✕</button>
+    </div>`).join('');
+  updateAngSumme();
+}
+
+function addAngebotPosition() {
+  angPositionen.push({ name: '', menge: 1, preis: 0 });
+  renderAngPositionen();
+}
+
+function removeAngPosition(i) {
+  angPositionen.splice(i, 1);
+  renderAngPositionen();
+}
+
+function updateAngSumme() {
+  const total = angPositionen.reduce((s,p) => s + (p.menge||0)*(p.preis||0), 0);
+  document.getElementById('ang-netto').textContent = '€ ' + total.toFixed(2);
+  document.getElementById('ang-gesamt').textContent = '€ ' + total.toFixed(2);
+}
+
+function saveAngebot(forceStatus = null) {
+  const kunde = document.getElementById('ang-kunde').value.trim();
+  const titel = document.getElementById('ang-titel').value.trim();
+  if (!kunde || !titel) { showToast('⚠️ Bitte Kunde und Titel eingeben.'); return; }
+
+  const data = {
+    kunde,
+    titel,
+    einleitung: document.getElementById('ang-einleitung').value.trim(),
+    schluss: document.getElementById('ang-schluss').value.trim(),
+    gueltig: document.getElementById('ang-gueltig').value,
+    status: forceStatus || document.getElementById('ang-status').value,
+    positionen: angPositionen.filter(p => p.name),
+    datum: new Date().toISOString().split('T')[0],
+  };
+
+  if (angebotEditId) {
+    const idx = angebote.findIndex(a => a.id === angebotEditId);
+    angebote[idx] = { ...angebote[idx], ...data };
+    showToast('✅ Angebot aktualisiert!', 'success');
+  } else {
+    angebote.unshift({ id: `ANG-2024-00${angCounter++}`, ...data });
+    showToast('✅ Angebot gespeichert!', 'success');
+  }
+  closeAngebotModal();
+  renderAngebote();
+}
+
+function editAngebot(id) { openAngebotModal(id); }
+
+function angebotZuRechnung(id) {
+  const a = angebote.find(x => x.id === id);
+  if (!a) return;
+  const rNr = `RE-2024-00${Date.now() % 100}`;
+  showToast(`✅ Rechnung ${rNr} aus Angebot ${id} erstellt!`, 'success');
+  // In echter App: neue Rechnung mit den Daten anlegen und zu Rechnungen navigieren
+  const idx = angebote.findIndex(x => x.id === id);
+  angebote[idx].status = 'Angenommen';
+  renderAngebote();
+}
+
+function previewAngebot(id) {
+  const a = angebote.find(x => x.id === id);
+  if (!a) return;
+  const total = a.positionen.reduce((s,p) => s + p.menge*p.preis, 0);
+  const firma = currentUser?.firma || 'Mein Unternehmen';
+  const logoHtml = logoDataURL
+    ? `<img src="${logoDataURL}" style="max-height:44px;max-width:130px;object-fit:contain;" />`
+    : `<div style="font-size:18px;font-weight:700;">${firma}</div>`;
+
+  const positionen = a.positionen.map((p,i) => `
+    <tr style="border-bottom:1px solid #f0ece4;">
+      <td style="padding:9px 8px;color:#888;">${i+1}</td>
+      <td style="padding:9px 8px;">${p.name}</td>
+      <td style="padding:9px 8px;text-align:right;">${p.menge}</td>
+      <td style="padding:9px 8px;text-align:right;">€ ${p.preis.toFixed(2)}</td>
+      <td style="padding:9px 8px;text-align:right;font-weight:600;">€ ${(p.menge*p.preis).toFixed(2)}</td>
+    </tr>`).join('');
+
+  document.getElementById('rechnung-preview-content').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a1612;">
+      ${logoHtml}
+      <div style="text-align:right;">
+        <div style="font-size:20px;font-weight:700;">ANGEBOT</div>
+        <div style="color:#888;font-size:12px;">${a.id}</div>
+        <div style="color:#888;font-size:12px;">Erstellt: ${formatDate(a.datum)}</div>
+        <div style="color:#888;font-size:12px;">Gültig bis: ${formatDate(a.gueltig)}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+      <div><div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">Von</div>
+        <div style="font-weight:600;">${firma}</div><div style="color:#888;font-size:12px;">Musterstraße 1, 12345 Berlin</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">An</div>
+        <div style="font-weight:600;">${a.kunde}</div><div style="color:#888;font-size:12px;">Kundenstraße 5, 10115 Berlin</div></div>
+    </div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:6px;">${a.titel}</div>
+    ${a.einleitung ? `<p style="font-size:13px;color:#666;margin-bottom:16px;">${a.einleitung}</p>` : ''}
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <thead><tr style="background:#f5f2eb;">
+        <th style="padding:9px 8px;text-align:left;font-size:11px;color:#888;text-transform:uppercase;">Pos.</th>
+        <th style="padding:9px 8px;text-align:left;font-size:11px;color:#888;text-transform:uppercase;">Beschreibung</th>
+        <th style="padding:9px 8px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;">Menge</th>
+        <th style="padding:9px 8px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;">Preis</th>
+        <th style="padding:9px 8px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;">Gesamt</th>
+      </tr></thead>
+      <tbody>${positionen}</tbody>
+    </table>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+      <div style="min-width:220px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;color:#888;font-size:13px;"><span>Netto</span><span>€ ${total.toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;color:#aaa;font-size:12px;"><span>USt. (§19 UStG)</span><span>€ 0,00</span></div>
+        <div style="border-top:2px solid #1a1612;margin-top:5px;padding-top:7px;display:flex;justify-content:space-between;font-weight:700;font-size:15px;"><span>Gesamtbetrag</span><span>€ ${total.toFixed(2)}</span></div>
+      </div>
+    </div>
+    ${a.schluss ? `<p style="font-size:13px;color:#666;margin-bottom:12px;">${a.schluss}</p>` : ''}
+    <div style="margin-top:12px;font-size:10px;color:#ccc;text-align:center;">Gemäß §19 UStG wird keine Umsatzsteuer berechnet. · Erstellt mit Klario</div>`;
+
+  document.getElementById('preview-download-btn').onclick = () => exportAngebotPDF(id);
+  document.getElementById('rechnung-preview-modal').classList.add('show');
+}
+
+function exportAngebotPDF(id) {
+  if (!window.jspdf) { showToast('⚠️ PDF-Library lädt noch.'); return; }
+  const a = angebote.find(x => x.id === id);
+  if (!a) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const firma = currentUser?.firma || 'Mein Unternehmen';
+
+  // Header
+  doc.setFillColor(26,22,18);
+  doc.rect(0,0,W,22,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text(firma, 14, 14);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('ANGEBOT', W-14, 14, {align:'right'});
+
+  let y = 32;
+  doc.setTextColor(26,22,18);
+
+  // Meta
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text(a.titel, 14, y); y += 8;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,115,110);
+  doc.text(`${a.id}  ·  Erstellt: ${formatDate(a.datum)}  ·  Gültig bis: ${formatDate(a.gueltig)}`, 14, y); y += 12;
+
+  // Addresses
+  doc.setTextColor(26,22,18); doc.setFontSize(10);
+  doc.setFont('helvetica','bold'); doc.text('Von:', 14, y); doc.text('An:', W/2, y);
+  doc.setFont('helvetica','normal'); doc.setTextColor(80,75,70);
+  doc.text(firma, 14, y+6); doc.text(a.kunde, W/2, y+6);
+  doc.text('Musterstraße 1, 12345 Berlin', 14, y+12); doc.text('Kundenstraße 5, 10115 Berlin', W/2, y+12);
+  y += 26;
+
+  if (a.einleitung) {
+    doc.setTextColor(100,95,90); doc.setFontSize(10);
+    const lines = doc.splitTextToSize(a.einleitung, W-28);
+    doc.text(lines, 14, y); y += lines.length * 5 + 6;
+  }
+
+  const total = a.positionen.reduce((s,p) => s+p.menge*p.preis, 0);
+  doc.autoTable({
+    startY: y,
+    head: [['Pos.','Beschreibung','Menge','Einzelpreis','Gesamt']],
+    body: a.positionen.map((p,i) => [i+1, p.name, p.menge, `€ ${p.preis.toFixed(2)}`, `€ ${(p.menge*p.preis).toFixed(2)}`]),
+    styles: { fontSize:10, cellPadding:5, textColor:[26,22,18] },
+    headStyles: { fillColor:[245,242,235], textColor:[26,22,18], fontStyle:'bold', fontSize:9 },
+    alternateRowStyles: { fillColor:[252,250,247] },
+    columnStyles: { 0:{cellWidth:12}, 2:{halign:'right',cellWidth:18}, 3:{halign:'right',cellWidth:30}, 4:{halign:'right',cellWidth:30} },
+    margin: { left:14, right:14 },
+    foot: [['','','','Gesamtbetrag:', `€ ${total.toFixed(2)}`]],
+    footStyles: { fillColor:[26,22,18], textColor:[255,255,255], fontStyle:'bold' },
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+  if (a.schluss) {
+    doc.setTextColor(100,95,90); doc.setFontSize(10);
+    const lines = doc.splitTextToSize(a.schluss, W-28);
+    doc.text(lines, 14, y);
+  }
+
+  getKlarioFooter(doc);
+  doc.save(`${a.id}-${a.kunde}.pdf`);
+  showToast('✅ Angebots-PDF heruntergeladen!', 'success');
+}
+
+// ── STEUER / EÜR ──
+const euerDaten = {
+  2024: {
+    einnahmenMonatlich: [1200,1850,2100,1600,2400,2840,3100,2650,1900,2200,2840,3200],
+    ausgabenMonatlich:  [420, 680, 510, 590, 720, 191, 450, 380, 310, 490, 520, 610],
+  },
+  2023: {
+    einnahmenMonatlich: [800,1100,1400,1200,1600,1900,2100,1800,1500,1700,2000,2400],
+    ausgabenMonatlich:  [310,420, 390, 440, 510, 480, 520, 490, 360, 410, 550, 630],
+  },
+  2022: {
+    einnahmenMonatlich: [600,800,900,1000,1200,1400,1600,1300,1100,1200,1500,1800],
+    ausgabenMonatlich:  [250,310,290,340, 380, 410, 450, 420, 300, 350, 420, 510],
+  }
+};
+
+const monate = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+function renderEuer() {
+  const jahr = parseInt(document.getElementById('euer-jahr').value);
+  const d = euerDaten[jahr];
+  if (!d) return;
+
+  const einnahmen = d.einnahmenMonatlich.reduce((s,v) => s+v, 0);
+  const ausgabenGes = d.ausgabenMonatlich.reduce((s,v) => s+v, 0);
+  const gewinn = einnahmen - ausgabenGes;
+  const steuerSatz = gewinn < 10908 ? 0 : gewinn < 15999 ? 0.14 : gewinn < 66760 ? 0.24 : 0.42;
+  const steuerBetrag = gewinn * steuerSatz;
+  const ruecklage = gewinn * 0.30;
+
+  // Top cards
+  document.getElementById('euer-einnahmen').textContent = '€ ' + einnahmen.toLocaleString('de-DE');
+  document.getElementById('euer-einnahmen-sub').textContent = `${d.einnahmenMonatlich.filter(v=>v>0).length} Monate aktiv`;
+  document.getElementById('euer-ausgaben-total').textContent = '€ ' + ausgabenGes.toLocaleString('de-DE');
+  document.getElementById('euer-ausgaben-sub').textContent = `Ø € ${Math.round(ausgabenGes/12)} / Monat`;
+  document.getElementById('euer-gewinn').textContent = '€ ' + gewinn.toLocaleString('de-DE');
+  document.getElementById('euer-gewinn').style.color = gewinn >= 0 ? 'var(--sage)' : 'var(--danger)';
+  document.getElementById('euer-gewinn-sub').textContent = `${Math.round(gewinn/einnahmen*100)}% Gewinnmarge`;
+  document.getElementById('euer-steuer').textContent = '€ ' + Math.round(ruecklage).toLocaleString('de-DE');
+  document.getElementById('euer-steuer-sub').textContent = `≈ ${Math.round(steuerSatz*100)}% Einkommensteuer`;
+  document.getElementById('euer-jahr-label').textContent = jahr;
+  document.getElementById('euer-ruecklage-big').textContent = '€ ' + Math.round(ruecklage).toLocaleString('de-DE');
+
+  // Steuer details
+  document.getElementById('euer-steuer-details').innerHTML = [
+    { label: 'Gewinn (zu versteuern)', value: `€ ${gewinn.toLocaleString('de-DE')}` },
+    { label: 'Geschätzter Steuersatz', value: `${Math.round(steuerSatz*100)} %` },
+    { label: 'Geschätzte Einkommensteuer', value: `≈ € ${Math.round(steuerBetrag).toLocaleString('de-DE')}` },
+  ].map(item => `
+    <div>
+      <div style="font-size:11px;color:#8898cc;margin-bottom:3px;">${item.label}</div>
+      <div style="font-size:15px;font-weight:700;color:#2a3a6a;">${item.value}</div>
+    </div>`).join('');
+
+  // Monatliche Tabelle
+  const tbody = document.getElementById('euer-monat-tbody');
+  const tfoot = document.getElementById('euer-monat-tfoot');
+  tbody.innerHTML = monate.map((m, i) => {
+    const e = d.einnahmenMonatlich[i];
+    const a = d.ausgabenMonatlich[i];
+    const g = e - a;
+    return `<tr>
+      <td style="font-weight:500;">${m} ${jahr}</td>
+      <td style="color:var(--sage);">€ ${e.toLocaleString('de-DE')}</td>
+      <td style="color:var(--danger);">€ ${a.toLocaleString('de-DE')}</td>
+      <td style="font-weight:600;color:${g>=0?'var(--sage)':'var(--danger)'};">€ ${g.toLocaleString('de-DE')}</td>
+    </tr>`;
+  }).join('');
+  tfoot.innerHTML = `<tr style="background:var(--ink);color:white;">
+    <td style="padding:10px 22px;font-weight:700;">Gesamt</td>
+    <td style="padding:10px 22px;font-weight:700;color:#a8d8a8;">€ ${einnahmen.toLocaleString('de-DE')}</td>
+    <td style="padding:10px 22px;font-weight:700;color:#ffaaaa;">€ ${ausgabenGes.toLocaleString('de-DE')}</td>
+    <td style="padding:10px 22px;font-weight:700;color:${gewinn>=0?'#a8d8a8':'#ffaaaa'};">€ ${gewinn.toLocaleString('de-DE')}</td>
+  </tr>`;
+
+  // Kategorie-Aufstellung (aus echten Ausgaben)
+  const cats = {};
+  ausgaben.forEach(a => { cats[a.kategorie] = (cats[a.kategorie]||0) + a.betrag; });
+  // Pad with demo data
+  const demoCats = { 'Betriebskosten':810,'Material':680,'Software':192,'Marketing':360,'Fahrtkosten':120,'Sonstiges':90 };
+  Object.keys(demoCats).forEach(k => { if (!cats[k]) cats[k] = demoCats[k]; });
+  const catTotal = Object.values(cats).reduce((s,v)=>s+v,0);
+  const palette = ['#c8832a','#5a7a5a','#6a7aaa','#aa6a9a','#c04040','#9a9590'];
+  const catKeys = Object.keys(cats);
+
+  document.getElementById('euer-kat-list').innerHTML = catKeys.map((k,i) => `
+    <div style="padding:10px 22px;${i<catKeys.length-1?'border-bottom:1px solid var(--border);':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;border-radius:2px;background:${palette[i%palette.length]};"></div>
+          <span style="font-size:13px;font-weight:500;">${k}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:11px;color:var(--ink-dim);">${Math.round(cats[k]/catTotal*100)}%</span>
+          <span style="font-size:13px;font-weight:600;">€ ${cats[k].toFixed(2)}</span>
+        </div>
+      </div>
+      <div style="background:var(--border);border-radius:3px;height:4px;">
+        <div style="background:${palette[i%palette.length]};height:100%;border-radius:3px;width:${Math.round(cats[k]/catTotal*100)}%;transition:width 0.5s;"></div>
+      </div>
+    </div>`).join('');
+
+  // EÜR Kurzfassung
+  document.getElementById('euer-kurz').innerHTML = [
+    { label: 'Betriebseinnahmen', value: einnahmen, bold: false },
+    { label: '– Betriebsausgaben', value: -ausgabenGes, bold: false },
+    { label: '= Gewinn / Überschuss', value: gewinn, bold: true },
+    { label: '→ Steuerrücklage (30%)', value: -ruecklage, bold: false, color:'#4060aa' },
+  ].map(r => `
+    <div style="display:flex;justify-content:space-between;padding:4px 0;${r.bold?'border-top:1.5px solid var(--border-strong);margin-top:4px;padding-top:8px;':''}">
+      <span style="font-size:12px;${r.bold?'font-weight:700;':''}color:${r.color||'var(--ink-soft)'};">${r.label}</span>
+      <span style="font-size:12px;font-weight:${r.bold?'700':'500'};color:${r.color||(r.value>=0?'var(--sage)':'var(--danger)')}">${r.value>=0?'':''}€ ${Math.abs(r.value).toLocaleString('de-DE')}</span>
+    </div>`).join('');
+}
+
+function exportEuerPDF() {
+  if (!window.jspdf) { showToast('⚠️ PDF-Library lädt noch.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const jahr = parseInt(document.getElementById('euer-jahr').value);
+  const d = euerDaten[jahr];
+  const firma = currentUser?.firma || 'Mein Unternehmen';
+  const einnahmen = d.einnahmenMonatlich.reduce((s,v)=>s+v,0);
+  const ausgabenGes = d.ausgabenMonatlich.reduce((s,v)=>s+v,0);
+  const gewinn = einnahmen - ausgabenGes;
+  const ruecklage = gewinn * 0.30;
+
+  // Header
+  doc.setFillColor(26,22,18);
+  doc.rect(0,0,W,22,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text(firma, 14, 14);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text(`EINNAHMEN-ÜBERSCHUSS-RECHNUNG ${jahr}`, W-14, 14, {align:'right'});
+
+  let y = 32;
+  doc.setTextColor(26,22,18);
+  doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text(`EÜR ${jahr} – ${firma}`, 14, y); y += 7;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,115,110);
+  doc.text(`Erstellt am ${new Date().toLocaleDateString('de-DE')} · Kleinunternehmer gemäß §19 UStG`, 14, y); y += 12;
+
+  // Summary box
+  doc.setFillColor(245,242,235);
+  doc.roundedRect(14, y, W-28, 26, 3, 3, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(26,22,18);
+  doc.text('Betriebseinnahmen:', 20, y+8);
+  doc.text('Betriebsausgaben:', 20, y+15);
+  doc.text('Gewinn / Überschuss:', 20, y+22);
+  doc.setTextColor(90,122,90);
+  doc.text(`€ ${einnahmen.toLocaleString('de-DE')}`, W-20, y+8, {align:'right'});
+  doc.setTextColor(192,64,64);
+  doc.text(`€ ${ausgabenGes.toLocaleString('de-DE')}`, W-20, y+15, {align:'right'});
+  doc.setTextColor(gewinn>=0?26:192, gewinn>=0?22:64, gewinn>=0?18:64);
+  doc.text(`€ ${gewinn.toLocaleString('de-DE')}`, W-20, y+22, {align:'right'});
+  y += 34;
+
+  // Steuerrücklage Hinweis
+  doc.setFillColor(239,243,255);
+  doc.roundedRect(14, y, W-28, 14, 3, 3, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(42,58,106);
+  doc.text('⚠  Empfohlene Steuerrücklage (30%):', 20, y+9);
+  doc.text(`€ ${Math.round(ruecklage).toLocaleString('de-DE')}`, W-20, y+9, {align:'right'});
+  y += 22;
+
+  // Monatliche Aufstellung
+  doc.autoTable({
+    startY: y,
+    head: [['Monat', 'Einnahmen', 'Ausgaben', 'Gewinn / Verlust']],
+    body: monate.map((m,i) => {
+      const e = d.einnahmenMonatlich[i];
+      const a = d.ausgabenMonatlich[i];
+      return [`${m} ${jahr}`, `€ ${e.toLocaleString('de-DE')}`, `€ ${a.toLocaleString('de-DE')}`, `€ ${(e-a).toLocaleString('de-DE')}`];
+    }),
+    foot: [['Gesamt', `€ ${einnahmen.toLocaleString('de-DE')}`, `€ ${ausgabenGes.toLocaleString('de-DE')}`, `€ ${gewinn.toLocaleString('de-DE')}`]],
+    styles: { fontSize:9, cellPadding:4, textColor:[26,22,18] },
+    headStyles: { fillColor:[245,242,235], textColor:[26,22,18], fontStyle:'bold' },
+    footStyles: { fillColor:[26,22,18], textColor:[255,255,255], fontStyle:'bold' },
+    alternateRowStyles: { fillColor:[252,250,247] },
+    columnStyles: { 1:{halign:'right'}, 2:{halign:'right'}, 3:{halign:'right',fontStyle:'bold'} },
+    margin: { left:14, right:14 },
+  });
+
+  // Footer
+  getKlarioFooter(doc);
+  doc.save(`EÜR-${jahr}-${firma}.pdf`);
+  showToast('✅ EÜR-PDF heruntergeladen!', 'success');
+}
+
+// ── CHARTS ──
+let umsatzChart = null;
+let kategorieChart = null;
+let statusChart = null;
+
+const chartData = {
+  monate: ['Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov'],
+  umsatz:   [1200, 1850, 2100, 1600, 2400, 2840],
+  ausgaben: [420,  680,  510,  590,  720,  191],
+  gewinn:   [780, 1170, 1590, 1010, 1680, 2649],
+};
+
+function initCharts() {
+  if (!window.Chart) return;
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.color = '#9a9590';
+
+  buildUmsatzChart('umsatz');
+  buildKategorieChart();
+  buildStatusChart();
+  buildTopKunden();
+}
+
+function buildUmsatzChart(type) {
+  const ctx = document.getElementById('umsatz-chart');
+  if (!ctx) return;
+  if (umsatzChart) umsatzChart.destroy();
+
+  const colors = {
+    umsatz:   { border: '#c8832a', bg: 'rgba(200,131,42,0.08)' },
+    ausgaben: { border: '#c04040', bg: 'rgba(192,64,64,0.08)' },
+    gewinn:   { border: '#5a7a5a', bg: 'rgba(90,122,90,0.08)' },
+  };
+  const labels = { umsatz: 'Umsatz', ausgaben: 'Ausgaben', gewinn: 'Gewinn (netto)' };
+
+  umsatzChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartData.monate,
+      datasets: [{
+        label: labels[type],
+        data: chartData[type],
+        borderColor: colors[type].border,
+        backgroundColor: colors[type].bg,
+        borderWidth: 2.5,
+        pointBackgroundColor: colors[type].border,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.4,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1612',
+          titleColor: '#fff',
+          bodyColor: '#ccc',
+          padding: 10,
+          callbacks: { label: ctx => ` € ${ctx.parsed.y.toLocaleString('de-DE')}` }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          border: { display: false },
+          ticks: { callback: v => '€ ' + v.toLocaleString('de-DE') }
+        }
+      }
+    }
+  });
+}
+
+function switchChart(type, btn) {
+  document.querySelectorAll('#section-dashboard .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildUmsatzChart(type);
+}
+
+function buildKategorieChart() {
+  const ctx = document.getElementById('kategorie-chart');
+  if (!ctx) return;
+  if (kategorieChart) kategorieChart.destroy();
+
+  const cats = {};
+  ausgaben.forEach(a => { cats[a.kategorie] = (cats[a.kategorie] || 0) + a.betrag; });
+  const labels = Object.keys(cats);
+  const data = Object.values(cats);
+  const palette = ['#c8832a','#5a7a5a','#6a7aaa','#aa6a9a','#c04040','#9a9590'];
+
+  kategorieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: palette.slice(0, labels.length), borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1612',
+          callbacks: { label: ctx => ` € ${ctx.parsed.toFixed(2)}` }
+        }
+      }
+    }
+  });
+
+  // Custom legend
+  const legend = document.getElementById('kategorie-legend');
+  if (legend) {
+    legend.innerHTML = labels.map((l, i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div style="width:10px;height:10px;border-radius:2px;background:${palette[i]};flex-shrink:0;"></div>
+          <span style="color:var(--ink-soft);">${l}</span>
+        </div>
+        <span style="font-weight:600;color:var(--ink);">€ ${data[i].toFixed(2)}</span>
+      </div>`).join('');
+  }
+}
+
+function buildStatusChart() {
+  const ctx = document.getElementById('status-chart');
+  if (!ctx) return;
+  if (statusChart) statusChart.destroy();
+
+  statusChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Bezahlt', 'Offen', 'Überfällig'],
+      datasets: [{
+        data: [2840, 560, 1440],
+        backgroundColor: ['rgba(90,122,90,0.7)', 'rgba(200,131,42,0.7)', 'rgba(192,64,64,0.7)'],
+        borderColor:      ['#5a7a5a', '#c8832a', '#c04040'],
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1612',
+          callbacks: { label: ctx => ` € ${ctx.parsed.y.toLocaleString('de-DE')}` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false } },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          border: { display: false },
+          ticks: { callback: v => '€ ' + v.toLocaleString('de-DE') }
+        }
+      }
+    }
+  });
+}
+
+function buildTopKunden() {
+  const el = document.getElementById('top-kunden-list');
+  if (!el) return;
+  const kunden = [
+    { name: 'TechStart AG', umsatz: 4800, rechnungen: 3 },
+    { name: 'Schmidt GmbH', umsatz: 3200, rechnungen: 4 },
+    { name: 'Bauer & Co.',  umsatz: 1120, rechnungen: 2 },
+  ];
+  const max = kunden[0].umsatz;
+  el.innerHTML = kunden.map((k, i) => `
+    <div style="padding:12px 22px;${i < kunden.length-1 ? 'border-bottom:1px solid var(--border);' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:26px;height:26px;border-radius:50%;background:var(--amber-pale);color:var(--amber);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">${k.name}</div>
+            <div style="font-size:11px;color:var(--ink-dim);">${k.rechnungen} Rechnung${k.rechnungen>1?'en':''}</div>
+          </div>
+        </div>
+        <div style="font-family:'Instrument Serif',serif;font-size:16px;">€ ${k.umsatz.toLocaleString('de-DE')}</div>
+      </div>
+      <div style="background:var(--border);border-radius:3px;height:4px;">
+        <div style="background:var(--amber);height:100%;border-radius:3px;width:${Math.round(k.umsatz/max*100)}%;transition:width 0.5s ease;"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── MAHNWESEN ──
+let mahnRechnungen = [
+  { id: 'RE-2024-001', kunde: 'TechStart AG', betrag: 1440, faelligAm: '2024-11-01', mahnstufe: 0, mahnDaten: [] },
+  { id: 'RE-2024-002', kunde: 'Bauer & Co.', betrag: 560, faelligAm: '2024-11-08', mahnstufe: 1, mahnDaten: ['2024-11-22'] },
+];
+let currentMahnRechnung = null;
+let currentMahnstufe = 1;
+let mahnFilter = 'alle';
+
+const mahnTexte = {
+  1: (r) => `Betreff: Zahlungserinnerung ${r.id}
+
+Sehr geehrte Damen und Herren,
+
+bei der Durchsicht unserer Unterlagen haben wir festgestellt, dass die Rechnung ${r.id} vom ${formatDate(r.faelligAm)} über € ${r.betrag.toFixed(2)} noch nicht beglichen wurde.
+
+Möglicherweise hat sich Ihre Zahlung mit diesem Schreiben gekreuzt. In diesem Fall bitten wir Sie, dieses Schreiben als gegenstandslos zu betrachten.
+
+Falls die Zahlung noch aussteht, bitten wir Sie freundlich, den Betrag von € ${r.betrag.toFixed(2)} bis zum [DATUM] auf unser Konto zu überweisen.
+
+Mit freundlichen Grüßen`,
+
+  2: (r) => `Betreff: 2. Mahnung – ${r.id} – Forderung € ${(r.betrag + 5).toFixed(2)}
+
+Sehr geehrte Damen und Herren,
+
+trotz unserer freundlichen Erinnerung haben wir bis heute keinen Zahlungseingang für die Rechnung ${r.id} (€ ${r.betrag.toFixed(2)}) festgestellt.
+
+Wir fordern Sie hiermit auf, den folgenden Betrag bis spätestens [DATUM] zu überweisen:
+
+  Rechnungsbetrag:     € ${r.betrag.toFixed(2)}
+  Mahngebühr:          € 5,00
+  Gesamtforderung:     € ${(r.betrag + 5).toFixed(2)}
+
+Bei Nichtzahlung innerhalb der gesetzten Frist behalten wir uns vor, rechtliche Schritte einzuleiten.
+
+Mit freundlichen Grüßen`,
+
+  3: (r) => `Betreff: LETZTE MAHNUNG – Drohende Übergabe an Inkasso
+
+Sehr geehrte Damen und Herren,
+
+unsere Zahlungserinnerungen und Mahnungen bezüglich Rechnung ${r.id} blieben ohne Reaktion.
+
+Wir fordern Sie ein letztes Mal auf, den Betrag von € ${(r.betrag + 15).toFixed(2)} (inkl. Mahnkosten € 15,00) bis zum [DATUM] zu begleichen.
+
+Nach Ablauf dieser Frist übergeben wir die Forderung ohne weitere Ankündigung an ein Inkassounternehmen. Alle dadurch entstehenden Kosten gehen zu Ihren Lasten.
+
+Hochachtungsvoll`
+};
+
+function getDaysSince(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  return Math.floor((now - d) / (1000 * 60 * 60 * 24));
+}
+
+function renderMahnungen() {
+  const tbody = document.getElementById('mahnungen-tbody');
+  let data = mahnFilter === 'alle' ? mahnRechnungen
+    : mahnFilter === 'ueberfaellig' ? mahnRechnungen.filter(r => getDaysSince(r.faelligAm) > 14 && r.mahnstufe < 3)
+    : mahnRechnungen.filter(r => r.mahnstufe > 0);
+
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div><h4>Keine offenen Mahnungen</h4><p>Alle Rechnungen sind bezahlt!</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => {
+    const days = getDaysSince(r.faelligAm);
+    const urgency = days > 42 ? 'color:var(--danger);font-weight:600;' : days > 28 ? 'color:var(--amber);font-weight:600;' : 'color:var(--ink-soft);';
+    const stufenLabel = ['Keine', '1. Mahnung', '2. Mahnung', '3. Mahnung'][r.mahnstufe];
+    const stufenClass = `mahnstufe-${r.mahnstufe}`;
+    const naechste = r.mahnstufe < 3 ? r.mahnstufe + 1 : null;
+
+    return `<tr>
+      <td style="font-weight:500;">${r.id}</td>
+      <td>${r.kunde}</td>
+      <td style="font-family:'Instrument Serif',serif;font-size:15px;">€ ${r.betrag.toFixed(2)}</td>
+      <td><span style="${urgency}">${days} Tage</span><div style="font-size:11px;color:var(--ink-dim);">seit ${formatDate(r.faelligAm)}</div></td>
+      <td><span class="mahnstufe-badge ${stufenClass}">${stufenLabel}</span></td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${naechste ? `<button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;border-color:var(--amber);color:var(--amber);" onclick="openMahnungModal('${r.id}',${naechste})">📩 ${naechste}. Mahnung</button>` : `<span style="font-size:12px;color:var(--danger);font-weight:600;">Inkasso</span>`}
+          ${r.mahnstufe > 0 ? `<button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="markBezahlt('${r.id}')">✓ Bezahlt</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterMahnungen(f, btn) {
+  mahnFilter = f;
+  document.querySelectorAll('#section-mahnwesen .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMahnungen();
+}
+
+function openMahnungModal(rechnungId, stufe) {
+  currentMahnRechnung = mahnRechnungen.find(r => r.id === rechnungId);
+  currentMahnstufe = stufe;
+
+  document.getElementById('mahnung-modal-title').textContent = `${stufe}. Mahnung – ${rechnungId}`;
+  document.getElementById('mahnung-modal-sub').textContent = `${currentMahnRechnung.kunde} · € ${currentMahnRechnung.betrag.toFixed(2)} · ${getDaysSince(currentMahnRechnung.faelligAm)} Tage überfällig`;
+
+  // Set frist (14 days from now)
+  const frist = new Date();
+  frist.setDate(frist.getDate() + 14);
+  document.getElementById('mahnung-frist').value = frist.toISOString().split('T')[0];
+
+  // Gebühr visibility
+  document.getElementById('mahngebuehr-wrap').style.display = stufe === 1 ? 'none' : 'block';
+  document.getElementById('mahnung-gebuehr').value = stufe === 3 ? '15.00' : '5.00';
+
+  // Pre-select stufe
+  selectMahnstufe(stufe);
+
+  // Fill text
+  document.getElementById('mahnung-text').value = mahnTexte[stufe](currentMahnRechnung);
+
+  document.getElementById('mahnung-modal').classList.add('show');
+}
+
+function selectMahnstufe(stufe) {
+  currentMahnstufe = stufe;
+  document.querySelectorAll('.mahnstufe-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--warm-white)';
+  });
+  const active = document.querySelector(`.mahnstufe-btn[data-stufe="${stufe}"]`);
+  if (active) {
+    active.classList.add('active');
+    active.style.borderColor = stufe === 1 ? 'var(--sage)' : stufe === 2 ? 'var(--amber)' : 'var(--danger)';
+    active.style.background = stufe === 1 ? '#f0faf2' : stufe === 2 ? 'var(--amber-pale)' : '#fdf0f0';
+  }
+  if (currentMahnRechnung) {
+    document.getElementById('mahnung-text').value = mahnTexte[stufe](currentMahnRechnung);
+  }
+  document.getElementById('mahngebuehr-wrap').style.display = stufe === 1 ? 'none' : 'block';
+  document.getElementById('mahnung-gebuehr').value = stufe === 3 ? '15.00' : '5.00';
+}
+
+function saveMahnung() {
+  const r = mahnRechnungen.find(r => r.id === currentMahnRechnung.id);
+  r.mahnstufe = currentMahnstufe;
+  r.mahnDaten.push(new Date().toISOString().split('T')[0]);
+  closeMahnungModal();
+  renderMahnungen();
+  updateAutoMahnBanner();
+  showToast(`✅ ${currentMahnstufe}. Mahnung für ${currentMahnRechnung.id} gespeichert!`, 'success');
+}
+
+function markBezahlt(id) {
+  mahnRechnungen = mahnRechnungen.filter(r => r.id !== id);
+  renderMahnungen();
+  updateAutoMahnBanner();
+  showToast('✅ Rechnung als bezahlt markiert!', 'success');
+}
+
+function closeMahnungModal() { document.getElementById('mahnung-modal').classList.remove('show'); }
+
+function updateAutoMahnBanner() {
+  const offen = mahnRechnungen.filter(r => getDaysSince(r.faelligAm) > 14 && r.mahnstufe < 3);
+  const banner = document.getElementById('mahnung-auto-banner');
+  if (offen.length === 0) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'flex';
+    banner.querySelector('div > div > div:first-child').textContent = `${offen.length} Rechnung${offen.length > 1 ? 'en benötigen eine Mahnung' : ' benötigt eine Mahnung'}`;
+    banner.querySelector('div > div > div:last-child').textContent = offen.map(r => `${r.id} ist ${getDaysSince(r.faelligAm)} Tage überfällig`).join(' · ');
+  }
+}
+
+function autoMahnvorschlag() {
+  const offen = mahnRechnungen.filter(r => getDaysSince(r.faelligAm) > 14 && r.mahnstufe < 3);
+  if (offen.length > 0) openMahnungModal(offen[0].id, offen[0].mahnstufe + 1);
+}
+
+function exportMahnungPDF() {
+  if (!window.jspdf) { showToast('⚠️ PDF-Library lädt noch.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const r = currentMahnRechnung;
+  const stufe = currentMahnstufe;
+  const stufenTitel = ['', '1. MAHNUNG', '2. MAHNUNG – FORMELL', '3. MAHNUNG – LETZTE WARNUNG'][stufe];
+  const stufenColor = stufe === 1 ? [90,122,90] : stufe === 2 ? [200,131,42] : [192,64,64];
+
+  // Header
+  doc.setFillColor(...stufenColor);
+  doc.rect(0, 0, W, 22, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text(currentUser?.firma || 'Mein Unternehmen', 14, 14);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text(stufenTitel, W-14, 14, { align:'right' });
+
+  let y = 32;
+  doc.setTextColor(26,22,18);
+  doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text(stufenTitel, 14, y); y += 8;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(100,95,90);
+  doc.text(`Rechnung: ${r.id}  ·  Betrag: € ${r.betrag.toFixed(2)}  ·  Datum: ${new Date().toLocaleDateString('de-DE')}`, 14, y); y += 14;
+
+  // Recipient
+  doc.setTextColor(26,22,18); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(r.kunde, 14, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80,75,70);
+  doc.text('Kundenstraße 5', 14, y+6); doc.text('10115 Berlin', 14, y+12); y += 24;
+
+  // Body text
+  doc.setTextColor(26,22,18); doc.setFontSize(10);
+  const text = document.getElementById('mahnung-text').value;
+  const lines = doc.splitTextToSize(text, W - 28);
+  doc.text(lines, 14, y); y += lines.length * 5 + 10;
+
+  // Frist box
+  const frist = document.getElementById('mahnung-frist').value;
+  if (frist) {
+    doc.setFillColor(...stufenColor.map(c => Math.min(255, c + 180)));
+    doc.roundedRect(14, y, W-28, 14, 3, 3, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...stufenColor);
+    doc.text(`Zahlungsfrist: ${formatDate(frist)}`, W/2, y+9, { align:'center' });
+  }
+
+  getKlarioFooter(doc);
+  doc.save(`Mahnung-${stufe}-${r.id}.pdf`);
+  showToast('✅ Mahnungs-PDF heruntergeladen!', 'success');
+}
+
+// ── PDF HELPERS ──
+function getKlarioHeader(doc, titel) {
+  const firma = currentUser?.firma || 'Mein Unternehmen';
+  const W = doc.internal.pageSize.getWidth();
+  doc.setFillColor(26, 22, 18);
+  doc.rect(0, 0, W, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text(firma, 14, 14);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(titel, W - 14, 14, { align: 'right' });
+  doc.setTextColor(26, 22, 18);
+  return 30;
+}
+
+function getKlarioFooter(doc) {
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  doc.setDrawColor(220, 215, 205);
+  doc.line(14, H - 20, W - 14, H - 20);
+  doc.setFontSize(8);
+  doc.setTextColor(150, 145, 140);
+  doc.text('Erstellt mit Klario · klario.app', 14, H - 12);
+  doc.text('Seite 1', W - 14, H - 12, { align: 'right' });
+}
+
+function exportRechnungPDF(rechnung) {
+  if (!window.jspdf) { showToast('⚠️ PDF-Library lädt noch, bitte kurz warten.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  let y = getKlarioHeader(doc, 'RECHNUNG');
+  const firma = currentUser?.firma || 'Mein Unternehmen';
+
+  doc.setFontSize(9); doc.setTextColor(120,115,110);
+  doc.text(`${firma} · Musterstraße 1 · 12345 Berlin`, 14, y); y += 12;
+
+  doc.setFontSize(11); doc.setTextColor(26,22,18); doc.setFont('helvetica','bold');
+  doc.text(rechnung.kunde, 14, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80,75,70);
+  doc.text('Kundenstraße 5', 14, y+6); doc.text('10115 Berlin', 14, y+12);
+
+  doc.setTextColor(26,22,18); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+  doc.text('Rechnung', W-14, y+4, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(100,95,90);
+  doc.text(`Nr: ${rechnung.nr}`, W-14, y+13, {align:'right'});
+  doc.text(`Datum: ${rechnung.datum}`, W-14, y+20, {align:'right'});
+  doc.text('Fällig: 30 Tage nach Erhalt', W-14, y+27, {align:'right'});
+  y += 40;
+
+  doc.setDrawColor(220,215,205); doc.line(14, y, W-14, y); y += 8;
+
+  doc.autoTable({
+    startY: y,
+    head: [['Pos.','Beschreibung','Menge','Einzelpreis','Gesamt']],
+    body: rechnung.positionen.map((p,i) => [i+1, p.name, p.menge, `€ ${parseFloat(p.preis).toFixed(2)}`, `€ ${(p.menge*p.preis).toFixed(2)}`]),
+    styles: { fontSize:10, cellPadding:5, textColor:[26,22,18] },
+    headStyles: { fillColor:[245,242,235], textColor:[26,22,18], fontStyle:'bold', fontSize:9 },
+    alternateRowStyles: { fillColor:[252,250,247] },
+    columnStyles: { 0:{cellWidth:12}, 2:{halign:'right',cellWidth:18}, 3:{halign:'right',cellWidth:30}, 4:{halign:'right',cellWidth:30} },
+    margin: { left:14, right:14 },
+    tableLineColor:[220,215,205], tableLineWidth:0.3,
+  });
+
+  y = doc.lastAutoTable.finalY + 8;
+  const netto = rechnung.betrag;
+  doc.setDrawColor(220,215,205); doc.line(W-80, y, W-14, y); y += 6;
+  doc.setFontSize(10); doc.setTextColor(100,95,90);
+  doc.text('Nettobetrag:', W-80, y); doc.text(`€ ${netto.toFixed(2)}`, W-14, y, {align:'right'}); y+=6;
+  doc.text('Gemäß §19 UStG keine USt.:', W-80, y); doc.text('€ 0,00', W-14, y, {align:'right'}); y+=8;
+  doc.setDrawColor(26,22,18); doc.line(W-80, y, W-14, y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(26,22,18);
+  doc.text('Gesamtbetrag:', W-80, y); doc.text(`€ ${netto.toFixed(2)}`, W-14, y, {align:'right'}); y+=14;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(100,95,90);
+  doc.text('IBAN: DE12 3456 7890 1234 5678 90  ·  BIC: DEUTDEDB  ·  Deutsche Bank', 14, y); y+=5;
+  doc.text(`Verwendungszweck: ${rechnung.nr}`, 14, y);
+
+  getKlarioFooter(doc);
+  doc.save(`${rechnung.nr}.pdf`);
+  showToast('✅ PDF heruntergeladen!', 'success');
+}
+
+function previewRechnung(rechnung) {
+  const firma = currentUser?.firma || 'Mein Unternehmen';
+  const logoHtml = logoDataURL
+    ? `<img src="${logoDataURL}" style="max-height:50px;max-width:140px;object-fit:contain;" />`
+    : `<div style="font-size:20px;font-weight:700;color:#1a1612;">${firma}</div>`;
+  const positionen = rechnung.positionen.map((p,i) => `
+    <tr style="border-bottom:1px solid #f0ece4;">
+      <td style="padding:10px 8px;color:#888;">${i+1}</td>
+      <td style="padding:10px 8px;">${p.name}</td>
+      <td style="padding:10px 8px;text-align:right;">${p.menge}</td>
+      <td style="padding:10px 8px;text-align:right;">€ ${parseFloat(p.preis).toFixed(2)}</td>
+      <td style="padding:10px 8px;text-align:right;font-weight:600;">€ ${(p.menge*p.preis).toFixed(2)}</td>
+    </tr>`).join('');
+
+  document.getElementById('rechnung-preview-content').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #1a1612;">
+      ${logoHtml}
+      <div style="text-align:right;"><div style="font-size:22px;font-weight:700;">RECHNUNG</div>
+      <div style="color:#888;font-size:12px;">${rechnung.nr}</div>
+      <div style="color:#888;font-size:12px;">${rechnung.datum}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+      <div><div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Von</div>
+        <div style="font-weight:600;">${firma}</div>
+        <div style="color:#888;font-size:12px;">Musterstraße 1, 12345 Berlin<br>Steuernr: 12/345/67890</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">An</div>
+        <div style="font-weight:600;">${rechnung.kunde}</div>
+        <div style="color:#888;font-size:12px;">Kundenstraße 5, 10115 Berlin</div></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <thead><tr style="background:#f5f2eb;">
+        <th style="padding:10px 8px;text-align:left;font-size:11px;color:#888;text-transform:uppercase;">Pos.</th>
+        <th style="padding:10px 8px;text-align:left;font-size:11px;color:#888;text-transform:uppercase;">Beschreibung</th>
+        <th style="padding:10px 8px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;">Menge</th>
+        <th style="padding:10px 8px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;">Preis</th>
+        <th style="padding:10px 8px;text-align:right;font-size:11px;color:#888;text-transform:uppercase;">Gesamt</th>
+      </tr></thead>
+      <tbody>${positionen}</tbody>
+    </table>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+      <div style="min-width:240px;">
+        <div style="display:flex;justify-content:space-between;padding:5px 0;color:#888;font-size:13px;"><span>Nettobetrag</span><span>€ ${rechnung.betrag.toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;color:#aaa;font-size:12px;"><span>USt. (§19 UStG)</span><span>€ 0,00</span></div>
+        <div style="border-top:2px solid #1a1612;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700;font-size:15px;"><span>Gesamtbetrag</span><span>€ ${rechnung.betrag.toFixed(2)}</span></div>
+      </div>
+    </div>
+    <div style="background:#f9f7f2;border-radius:6px;padding:12px;font-size:11px;color:#888;">
+      <strong style="color:#555;">Zahlungsinfo</strong><br>
+      IBAN: DE12 3456 7890 1234 5678 90 · BIC: DEUTDEDB · Deutsche Bank<br>
+      Verwendungszweck: ${rechnung.nr} · Fällig: 30 Tage
+    </div>
+    <div style="margin-top:16px;font-size:10px;color:#ccc;text-align:center;">Gemäß §19 UStG wird keine Umsatzsteuer berechnet. · Erstellt mit Klario</div>`;
+
+  document.getElementById('preview-download-btn').onclick = () => exportRechnungPDF(rechnung);
+  document.getElementById('rechnung-preview-modal').classList.add('show');
+}
+
+function closePreview() { document.getElementById('rechnung-preview-modal').classList.remove('show'); }
+
+function exportAusgabenPDF() {
+  if (!window.jspdf) { showToast('⚠️ PDF-Library lädt noch.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  let y = getKlarioHeader(doc, 'AUSGABEN-ÜBERSICHT');
+  const monat = new Date().toLocaleDateString('de-DE', {month:'long', year:'numeric'});
+  doc.setFontSize(10); doc.setTextColor(100,95,90);
+  doc.text(`Zeitraum: ${monat}`, 14, y); y += 8;
+  const gesamt = ausgaben.reduce((s,a) => s+a.betrag, 0);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(26,22,18);
+  doc.text(`Gesamtausgaben: € ${gesamt.toFixed(2)}`, 14, y); y += 10;
+  doc.autoTable({
+    startY: y,
+    head: [['Datum','Beschreibung','Kategorie','Notiz','Betrag']],
+    body: ausgaben.map(a => [formatDate(a.datum), a.beschreibung, a.kategorie, a.notiz||'–', `€ ${a.betrag.toFixed(2)}`]),
+    styles: { fontSize:9, cellPadding:4, textColor:[26,22,18] },
+    headStyles: { fillColor:[245,242,235], textColor:[26,22,18], fontStyle:'bold' },
+    alternateRowStyles: { fillColor:[252,250,247] },
+    columnStyles: { 4:{halign:'right', fontStyle:'bold'} },
+    margin: { left:14, right:14 },
+    foot: [['','','','Gesamt:', `€ ${gesamt.toFixed(2)}`]],
+    footStyles: { fillColor:[26,22,18], textColor:[255,255,255], fontStyle:'bold' },
+  });
+  getKlarioFooter(doc);
+  doc.save(`Ausgaben-${monat}.pdf`);
+  showToast('✅ Ausgaben-PDF heruntergeladen!', 'success');
+}
+
+function exportProduktePDF() {
+  if (!window.jspdf) { showToast('⚠️ PDF-Library lädt noch.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  let y = getKlarioHeader(doc, 'PRODUKTKATALOG');
+  const firma = currentUser?.firma || 'Mein Unternehmen';
+  doc.setFontSize(10); doc.setTextColor(100,95,90);
+  doc.text(`${firma} · Stand: ${new Date().toLocaleDateString('de-DE')}`, 14, y); y += 10;
+  doc.autoTable({
+    startY: y,
+    head: [['Produkt / Leistung','Beschreibung','Kategorie','Preis','Einheit']],
+    body: produkte.map(p => [p.name, p.beschreibung, p.kategorie, `€ ${parseFloat(p.preis).toFixed(2)}`, p.einheit]),
+    styles: { fontSize:9, cellPadding:5, textColor:[26,22,18] },
+    headStyles: { fillColor:[245,242,235], textColor:[26,22,18], fontStyle:'bold' },
+    alternateRowStyles: { fillColor:[252,250,247] },
+    columnStyles: { 3:{halign:'right', fontStyle:'bold'}, 4:{halign:'center'} },
+    margin: { left:14, right:14 },
+  });
+  getKlarioFooter(doc);
+  doc.save(`Produktkatalog-${firma}.pdf`);
+  showToast('✅ Produktkatalog-PDF heruntergeladen!', 'success');
+}
+
+let logoDataURL = null;
+
+function handleLogoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('⚠️ Datei zu groß – max. 2 MB erlaubt.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    logoDataURL = e.target.result;
+    const img = document.getElementById('logo-preview-img');
+    img.src = logoDataURL;
+    img.style.display = 'block';
+    document.getElementById('logo-placeholder').style.display = 'none';
+    document.getElementById('logo-delete-btn').style.display = 'inline-flex';
+    document.getElementById('logo-status').style.display = 'block';
+    document.getElementById('invoice-preview-wrap').style.display = 'block';
+    document.getElementById('invoice-logo-img').src = logoDataURL;
+    document.getElementById('logo-preview-wrap').style.borderStyle = 'solid';
+    document.getElementById('logo-preview-wrap').style.borderColor = 'var(--amber)';
+    showToast('✅ Logo hochgeladen!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteLogo() {
+  logoDataURL = null;
+  document.getElementById('logo-preview-img').style.display = 'none';
+  document.getElementById('logo-preview-img').src = '';
+  document.getElementById('logo-placeholder').style.display = 'block';
+  document.getElementById('logo-delete-btn').style.display = 'none';
+  document.getElementById('logo-status').style.display = 'none';
+  document.getElementById('invoice-preview-wrap').style.display = 'none';
+  document.getElementById('logo-preview-wrap').style.borderStyle = 'dashed';
+  document.getElementById('logo-preview-wrap').style.borderColor = 'var(--border-strong)';
+  document.getElementById('logo-file-input').value = '';
+  showToast('Logo entfernt.');
+}
+
+function saveSettings() {
+  if (currentUser) {
+    currentUser.vorname = document.getElementById('set-vorname').value;
+    currentUser.nachname = document.getElementById('set-nachname').value;
+    currentUser.firma = document.getElementById('set-firma').value;
+    document.getElementById('dash-name').textContent = currentUser.vorname || 'Max';
+    document.getElementById('user-avatar').textContent = (currentUser.vorname || 'M')[0].toUpperCase();
+    if (logoDataURL) currentUser.logo = logoDataURL;
+  }
+  showToast('✅ Einstellungen gespeichert!', 'success');
+}
+
+</script>
+</body>
+</html>
